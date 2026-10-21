@@ -1,0 +1,11 @@
+.DS_Store
+.env
+*.bak
+node_modules/
+/_workspace/
+/dist/
+/docs/superpowers/
+/.superpowers/
+/.claude/worktrees/
+/.qwen/
+/.venv/
