@@ -17,6 +17,10 @@ mod macos;
 mod stub;
 #[cfg(target_os = "windows")]
 mod windows;
+/// Windows 활성 앱 식별 규칙 중 Win32 없이 정해지는 부분. 표준 라이브러리만 쓰므로 다른 OS에서도 테스트를 돌린다.
+#[cfg(all(test, not(target_os = "windows")))]
+#[path = "windows/identity.rs"]
+mod windows_identity;
 
 #[cfg(target_os = "macos")]
 use macos as platform;

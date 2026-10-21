@@ -359,6 +359,10 @@ struct HostedSearch {
 /// 프레임 호스트 창의 자식(손자 포함) 중 호스트가 아닌 프로세스가 만든 첫 창(UWP 앱의 CoreWindow)의 PID.
 /// 앱이 막 뜨는 중이거나 일시 중단되어 자식 창이 아직 붙어 있지 않으면 None.
 fn hosted_app_pid(frame: HWND, host_pid: u32) -> Option<u32> {
+    // EnumChildWindows에 NULL 부모를 넘기면 EnumWindows처럼 모든 최상위 창을 열거하므로 먼저 거른다.
+    if frame.is_invalid() {
+        return None;
+    }
     let mut search = HostedSearch {
         host_pid,
         found: None,
@@ -603,6 +607,7 @@ mod tests {
     #[test]
     fn 창이_없으면_활성_앱을_모른다() {
         assert_eq!(Resolver::default().window_app(HWND::default()), None);
+        // NULL 프레임을 그대로 EnumChildWindows에 넘기면 모든 최상위 창을 돌아 GUI 세션에서는 Some이 나온다.
         assert_eq!(hosted_app_pid(HWND::default(), 0), None);
     }
 
@@ -617,7 +622,7 @@ mod tests {
     fn 시작_전에도_포그라운드_앱을_조회한다() {
         let _serial = lock(&SERIAL);
         if let Some(app) = current_app() {
-            assert_eq!(app.id, app.path.to_lowercase());
+            assert_eq!(app.id, file_name(&app.path).to_lowercase());
             assert!(!app.name.is_empty());
         }
     }
@@ -648,7 +653,7 @@ mod tests {
         start(ignore).expect("돌던 훅을 멈추고 다시 건다");
         assert!(lock(&HOOK).is_some());
         if let Some(app) = current_app() {
-            assert_eq!(app.id, app.path.to_lowercase());
+            assert_eq!(app.id, file_name(&app.path).to_lowercase());
         }
         stop();
         assert!(lock(&HOOK).is_none());

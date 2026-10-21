@@ -39,15 +39,18 @@ pub fn file_description_query(lang: u16, code_page: u16) -> String {
     format!("\\StringFileInfo\\{lang:04x}{code_page:04x}\\FileDescription")
 }
 
-/// id는 경로를 소문자로 바꾼 값(대소문자만 다른 같은 exe를 한 앱으로 본다), path는 경로 그대로,
-/// name은 FileDescription(앞뒤 공백 제거, 비면 없는 값) → 확장자를 뗀 exe 이름 순으로 고른다.
+/// id는 실행 파일 이름(확장자 포함)을 소문자로 바꾼 값이다. Squirrel로 설치한 앱이나 Store 앱은 업데이트할 때마다
+/// 설치 경로(버전 폴더)가 바뀌므로, 경로가 아니라 이름으로 묶어야 통계가 버전마다 갈라지지 않는다.
+/// 소문자로 바꾸는 까닭은 Windows 파일 이름이 대소문자를 가리지 않기 때문이다.
+/// path는 전체 경로 그대로(아이콘 추출용) 두고, name은 FileDescription(앞뒤 공백 제거, 비면 없는 값) → 확장자를 뗀
+/// exe 이름 순으로 고른다.
 pub fn identity_from_path(path: &str, description: Option<&str>) -> AppIdentity {
     let name = description
         .map(str::trim)
         .filter(|description| !description.is_empty())
         .unwrap_or_else(|| file_stem(path));
     AppIdentity {
-        id: path.to_lowercase(),
+        id: file_name(path).to_lowercase(),
         name: name.to_owned(),
         path: path.to_owned(),
     }
@@ -119,15 +122,30 @@ mod tests {
     }
 
     #[test]
-    fn id는_경로_소문자이고_path는_경로_그대로다() {
+    fn id는_exe_이름_소문자이고_path는_경로_그대로다() {
         assert_eq!(
             identity_from_path(NOTEPAD, Some("메모장")),
             AppIdentity {
-                id: r"c:\windows\system32\notepad.exe".into(),
+                id: "notepad.exe".into(),
                 name: "메모장".into(),
                 path: NOTEPAD.into(),
             }
         );
+    }
+
+    #[test]
+    fn 업데이트로_설치_경로가_바뀌어도_id는_같다() {
+        let old = identity_from_path(
+            r"C:\Users\me\AppData\Local\Discord\app-1.0.9001\Discord.exe",
+            Some("Discord"),
+        );
+        let new = identity_from_path(
+            r"C:\Users\me\AppData\Local\Discord\app-1.0.9002\Discord.exe",
+            Some("Discord"),
+        );
+        assert_eq!(old.id, "discord.exe");
+        assert_eq!(old.id, new.id);
+        assert_ne!(old.path, new.path);
     }
 
     #[test]
