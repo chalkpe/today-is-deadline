@@ -450,11 +450,15 @@ mod tests {
     fn 권한에_맞게_시작하고_다시_시작해도_멈추지_않는다() {
         let _serial = lock(&SERIAL);
         let granted = permission_status() == PermissionStatus::Granted;
+        // GUI 세션이 없으면(CI 등) 맨 앞 앱이 없어 시작 시 캐시도 None이다. 그때는 캐시 단언을 건너뛴다.
+        let has_frontmost = frontmost_app().is_some();
         for _ in 0..2 {
             let started = start(ignore);
             if granted {
                 assert!(started.is_ok());
-                assert!(current_app().is_some());
+                if has_frontmost {
+                    assert!(current_app().is_some());
+                }
             } else {
                 assert_eq!(started.unwrap_err().reason, TAP_FAILED);
             }
@@ -466,9 +470,8 @@ mod tests {
     #[test]
     fn 활성화_알림으로_캐시를_갱신하고_해제하면_더는_바꾸지_않는다() {
         let _serial = lock(&SERIAL);
-        let cache: AppCache = Arc::new(Mutex::new(None));
         let frontmost = frontmost_app();
-        let (other, expected) = NSWorkspace::sharedWorkspace()
+        let candidate = NSWorkspace::sharedWorkspace()
             .runningApplications()
             .to_vec()
             .into_iter()
@@ -476,19 +479,27 @@ mod tests {
                 let identity =
                     app_identity(&app).filter(|identity| Some(identity) != frontmost.as_ref())?;
                 Some((app, identity))
-            })
-            .expect("맨 앞이 아닌 실행 중인 앱이 있어야 한다");
+            });
+        // GUI 세션이 없으면(CI 등) 식별할 수 있는 다른 실행 중 앱이 없을 수 있다. 그때는 userInfo에 실을 앱이 없으므로 건너뛴다.
+        let Some((other, expected)) = candidate else {
+            return;
+        };
 
+        let cache: AppCache = Arc::new(Mutex::new(None));
         let observer = ActivationObserver::register(Arc::clone(&cache));
         post_activation(Some(&other));
         assert_eq!(lock(&cache).as_ref(), Some(&expected));
 
-        *lock(&cache) = None;
+        // userInfo가 없으면 맨 앞 앱으로 덮어쓴다. 맨 앞 앱이 없으면(GUI 세션 없음) None으로 덮어쓴다.
+        // 어느 쪽이든 `other`는 맨 앞 앱과 다르게 골랐으므로 캐시가 바뀌었는지로 블록이 돌았음을 확인한다.
         post_activation(None);
-        assert!(
-            lock(&cache).is_some(),
-            "userInfo가 없으면 맨 앞 앱으로 채운다"
-        );
+        assert_ne!(lock(&cache).as_ref(), Some(&expected));
+        if frontmost.is_some() {
+            assert!(
+                lock(&cache).is_some(),
+                "userInfo가 없으면 맨 앞 앱으로 채운다"
+            );
+        }
 
         drop(observer);
         *lock(&cache) = None;
