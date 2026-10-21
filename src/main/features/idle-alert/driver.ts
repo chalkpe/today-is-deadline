@@ -50,10 +50,23 @@ export function createIdleAlert(deps: IdleAlertDeps): IdleAlert {
     }
   }
 
+  // run-to-completion: 효과 실행 중 들어온 이벤트는 큐에 넣고, 바깥 루프가 순서대로 처리한다
+  const queue: AlertEvent[] = []
+  let running = false
+
   function dispatch(event: AlertEvent) {
-    const next = reduceAlert(current, event)
-    current = next.state
-    for (const effect of next.effects) run(effect)
+    queue.push(event)
+    if (running) return
+    running = true
+    try {
+      for (let e = queue.shift(); e !== undefined; e = queue.shift()) {
+        const next = reduceAlert(current, e)
+        current = next.state
+        for (const effect of next.effects) run(effect)
+      }
+    } finally {
+      running = false
+    }
   }
 
   return { dispatch, state: () => current }

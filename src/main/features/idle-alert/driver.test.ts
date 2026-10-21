@@ -86,6 +86,44 @@ describe('createIdleAlert', () => {
     expect(vi.getTimerCount()).toBe(1)
   })
 
+  it('play 안에서 disable해도 타이머가 남지 않는다', () => {
+    const ref: { alert?: ReturnType<typeof createIdleAlert> } = {}
+    const alert = createIdleAlert({
+      getTimes: () => ({ idleMs: 10, repeatMs: 10 }),
+      play: () => ref.alert?.dispatch('disable'),
+      stop: () => {},
+      setTimeout: globalThis.setTimeout,
+      clearTimeout: globalThis.clearTimeout,
+    })
+    ref.alert = alert
+    alert.dispatch('enable')
+    vi.advanceTimersByTime(10)
+    expect(alert.state()).toBe('disabled')
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('play 안에서 keydown하면 유휴 타이머가 남아 다시 울린다', () => {
+    const ref: { alert?: ReturnType<typeof createIdleAlert> } = {}
+    let calls = 0
+    const alert = createIdleAlert({
+      getTimes: () => ({ idleMs: 10, repeatMs: 100 }),
+      play: () => {
+        calls++
+        if (calls === 1) ref.alert?.dispatch('keydown')
+      },
+      stop: () => {},
+      setTimeout: globalThis.setTimeout,
+      clearTimeout: globalThis.clearTimeout,
+    })
+    ref.alert = alert
+    alert.dispatch('enable')
+    vi.advanceTimersByTime(10)
+    expect(alert.state()).toBe('active')
+    expect(vi.getTimerCount()).toBe(1)
+    vi.advanceTimersByTime(10)
+    expect(calls).toBe(2)
+  })
+
   it('play/stop이 throw해도 머신이 깨지지 않는다', () => {
     const alert = createIdleAlert({
       getTimes: () => ({ idleMs: 10, repeatMs: 10 }),
