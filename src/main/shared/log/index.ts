@@ -43,3 +43,26 @@ export function createLogger(filePath: string, { now = () => new Date(), echo }:
     error: (message, err) => write('error', err === undefined ? message : `${message}: ${describeError(err)}`),
   }
 }
+
+type ProcessEvents = { on(event: 'uncaughtException' | 'unhandledRejection', listener: (err: unknown) => void): unknown }
+
+/**
+ * 처리되지 않은 예외·Promise 거부를 로그에 남기고 앱은 계속 돌게 한다(Electron 기본 오류 대화상자 대신).
+ * 오류 메시지만 남기며 키 정보는 애초에 오류로 넘어오지 않는다.
+ */
+export function logUncaught(proc: ProcessEvents, log: Pick<Logger, 'error'>): void {
+  const record = (label: string) => (err: unknown) => {
+    try {
+      log.error(label, err)
+    } catch {
+      // 처리기에서 다시 던지면 프로세스가 죽으므로 삼킨다
+    }
+  }
+  proc.on('uncaughtException', record('uncaught exception'))
+  proc.on('unhandledRejection', record('unhandled rejection'))
+}
+
+/** 시작 실패 대화상자 문구. 원인과 로그 파일 위치를 알려 준다. */
+export function startFailureMessage(err: unknown, logPath: string): string {
+  return `앱을 시작하지 못했습니다.\n${describeError(err)}\n\n자세한 내용은 로그 파일을 확인해 주세요.\n${logPath}`
+}

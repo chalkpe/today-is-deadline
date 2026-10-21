@@ -28,7 +28,7 @@ pnpm native:build   # Rust 애드온(native/index.<플랫폼>.node) 빌드
 pnpm dev            # electron-vite 개발 서버로 실행
 ```
 
-`pnpm native:build`를 하지 않으면 앱이 키 훅을 불러오지 못하고, 애드온을 불러오는 테스트는 건너뛴다.
+`pnpm native:build`를 하지 않으면 앱이 키 훅을 불러오지 못해 시작하지 않고, 원인과 로그 파일(`logs/main.log`) 위치를 담은 오류 대화상자를 보인 뒤 끝난다. 애드온을 불러오는 테스트는 건너뛴다.
 
 ## 검사
 

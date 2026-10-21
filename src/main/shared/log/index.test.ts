@@ -1,8 +1,9 @@
+import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createLogger, describeError, formatLogLine } from './index'
+import { createLogger, describeError, formatLogLine, logUncaught, startFailureMessage } from './index'
 
 const AT = new Date(Date.UTC(2026, 9, 22, 1, 2, 3, 4))
 
@@ -54,5 +55,38 @@ describe('createLogger', () => {
     fs.writeFileSync(blocker, '')
     const log = createLogger(path.join(blocker, 'main.log'), { now: () => AT })
     expect(() => log.info('무시')).not.toThrow()
+  })
+})
+
+describe('logUncaught', () => {
+  it('처리되지 않은 예외·거부를 기록만 하고 던지지 않는다', () => {
+    const proc = new EventEmitter()
+    const log = { error: vi.fn() }
+    logUncaught(proc, log)
+    expect(() => proc.emit('uncaughtException', new Error('콜백 실패'))).not.toThrow()
+    expect(() => proc.emit('unhandledRejection', '거부 사유')).not.toThrow()
+    expect(log.error.mock.calls).toEqual([
+      ['uncaught exception', new Error('콜백 실패')],
+      ['unhandled rejection', '거부 사유'],
+    ])
+  })
+
+  it('기록이 실패해도 처리기는 던지지 않는다', () => {
+    const proc = new EventEmitter()
+    logUncaught(proc, {
+      error: () => {
+        throw new Error('디스크 가득')
+      },
+    })
+    expect(() => proc.emit('uncaughtException', new Error('x'))).not.toThrow()
+  })
+})
+
+describe('startFailureMessage', () => {
+  it('오류 메시지와 로그 파일 경로를 담는다', () => {
+    const message = startFailureMessage(new Error('애드온을 찾을 수 없습니다'), '/logs/main.log')
+    expect(message).toContain('앱을 시작하지 못했습니다')
+    expect(message).toContain('애드온을 찾을 수 없습니다')
+    expect(message).toContain('/logs/main.log')
   })
 })

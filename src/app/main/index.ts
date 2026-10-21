@@ -10,13 +10,16 @@ import { createTray } from '@main/features/tray'
 import { broadcast, createWindows, type RendererSource, windowHandlers } from '@main/features/windows'
 import { openDb } from '@main/shared/db'
 import { registerHandlers } from '@main/shared/ipc'
-import { createLogger } from '@main/shared/log'
+import { createLogger, logUncaught, startFailureMessage } from '@main/shared/log'
 import { loadNativeHook, resolveNativeDir } from '@main/shared/native'
-import { app, ipcMain } from 'electron'
+import { app, dialog, ipcMain } from 'electron'
 
 // 의존성을 만들고 연결만 한다. 각 기능이 반응할 이벤트는 기능 안에서 구독한다.
 registerSoundScheme() // app.whenReady() 전에 등록해야 한다
-const log = createLogger(join(app.getPath('userData'), 'logs', 'main.log'), { echo: app.isPackaged ? undefined : console.log })
+const logPath = join(app.getPath('userData'), 'logs', 'main.log')
+const log = createLogger(logPath, { echo: app.isPackaged ? undefined : console.log })
+// 콜백 안의 예외 하나로 트레이 앱이 죽거나 Electron 기본 오류 창이 뜨지 않게 기록만 하고 계속 돈다
+logUncaught(process, log)
 
 if (!app.requestSingleInstanceLock()) app.quit()
 else app.whenReady().then(start).catch(fail)
@@ -78,6 +81,8 @@ function rendererSource(): RendererSource {
 
 function fail(err: unknown): void {
   log.error('start failed', err)
+  // 트레이 앱이라 조용히 끝나면 사용자가 알 수 없으므로 원인과 로그 위치를 알린다
+  dialog.showErrorBox('today-is-deadline', startFailureMessage(err, logPath))
   // 위젯 창이 닫기를 막고 있을 수 있으므로 quit 대신 바로 끝낸다
   app.exit(1)
 }
