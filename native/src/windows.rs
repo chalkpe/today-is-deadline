@@ -16,11 +16,12 @@ use std::time::{Duration, Instant};
 
 use ::windows::core::{w, BOOL, PCWSTR, PWSTR};
 use ::windows::Win32::Foundation::{
-    CloseHandle, FALSE, HANDLE, HWND, LPARAM, LRESULT, TRUE, WPARAM,
+    CloseHandle, FALSE, HANDLE, HINSTANCE, HWND, LPARAM, LRESULT, TRUE, WPARAM,
 };
 use ::windows::Win32::Storage::FileSystem::{
     GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW,
 };
+use ::windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use ::windows::Win32::System::Threading::{
     GetCurrentThreadId, OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
     PROCESS_QUERY_LIMITED_INFORMATION,
@@ -30,8 +31,7 @@ use ::windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, EnumChildWindows, GetForegroundWindow, GetMessageW, GetWindowThreadProcessId,
     PeekMessageW, PostThreadMessageW, SetWindowsHookExW, UnhookWindowsHookEx,
     EVENT_SYSTEM_FOREGROUND, KBDLLHOOKSTRUCT, MSG, PM_NOREMOVE, WH_KEYBOARD_LL,
-    WINEVENT_OUTOFCONTEXT, WINEVENT_SKIPOWNPROCESS, WM_KEYDOWN, WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN,
-    WM_SYSKEYUP, WM_USER,
+    WINEVENT_OUTOFCONTEXT, WM_KEYDOWN, WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP, WM_USER,
 };
 use napi::{Error, Result};
 
@@ -178,7 +178,7 @@ fn run_hooks(on_keydown: OnKeydown, cache: AppCache, ready: SyncSender<Started>)
     });
 
     // OUTOFCONTEXT라 다른 프로세스에 주입되지 않고 이 스레드의 메시지 루프에서 불린다. 모든 프로세스·스레드(0, 0)의
-    // 포그라운드 변경을 받되, SKIPOWNPROCESS로 이 프로세스(Electron) 창이 앞으로 온 변경은 받지 않는다.
+    // 포그라운드 변경을 받는다. 이 앱 자체 창(설정·통계)이 앞으로 와도 받아야 macOS처럼 그 창의 타자가 이 앱으로 집계된다.
     // 안전: foreground_proc는 이 모듈의 정적 함수라 훅이 걸려 있는 동안 내내 유효하다.
     let foreground = unsafe {
         SetWinEventHook(
@@ -188,7 +188,7 @@ fn run_hooks(on_keydown: OnKeydown, cache: AppCache, ready: SyncSender<Started>)
             Some(foreground_proc),
             0,
             0,
-            WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS,
+            WINEVENT_OUTOFCONTEXT,
         )
     };
     if foreground.is_invalid() {
@@ -202,10 +202,12 @@ fn run_hooks(on_keydown: OnKeydown, cache: AppCache, ready: SyncSender<Started>)
     let app = RESOLVER.with_borrow_mut(foreground_app);
     *lock(&cache) = app;
 
-    // 저수준 훅은 다른 프로세스에 주입되지 않으므로 모듈 핸들 없이(NULL) 전역(스레드 0)으로 건다.
-    // 콜백은 훅을 건 이 스레드가 메시지를 꺼낼 때 이 스레드에서 불린다.
+    // 전역(스레드 0) 훅에는 모듈 핸들을 넘기는 것이 문서의 규약이라 현재 모듈(실행 파일) 핸들을 넘긴다(rdev 등과 같은 관행).
+    // 저수준 훅은 다른 프로세스에 주입되지 않으므로 핸들을 얻지 못하면 NULL로 건다. 콜백은 이 스레드의 메시지 루프에서 불린다.
+    // 안전: NULL 이름은 호출 프로세스의 실행 파일 모듈을 뜻하고, 돌려받은 핸들은 참조 수를 늘리지 않아 닫을 필요가 없다.
+    let module = unsafe { GetModuleHandleW(None) }.ok().map(HINSTANCE::from);
     // 안전: keyboard_proc는 이 모듈의 정적 함수라 훅이 걸려 있는 동안 내내 유효하다.
-    let keyboard = unsafe { SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_proc), None, 0) };
+    let keyboard = unsafe { SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_proc), module, 0) };
     let Ok(keyboard) = keyboard else {
         // 안전: foreground는 바로 위에서 이 스레드가 걸었고 아직 풀지 않은 훅이다.
         let _ = unsafe { UnhookWinEvent(foreground) };
@@ -628,19 +630,27 @@ mod tests {
         assert!(lock(&HOOK).is_none());
     }
 
+    /// 훅을 걸 수 없는 환경(CI 서비스 세션 등)이면 `start`가 Err를 돌려준다. 그때는 상태가 비어 있는지만 보고 건너뛴다.
+    /// 걸 수 있으면 정지 → 재시작 → 돌던 중 재시작 → 정지가 패닉이나 멈춤 없이 끝나는지 본다.
     #[test]
     fn 시작하고_정지한_뒤_다시_시작할_수_있다() {
         let _serial = lock(&SERIAL);
-        for _ in 0..2 {
-            start(ignore).expect("훅 설치");
-            // 이미 돌고 있으면 멈추고 새로 건다.
-            start(ignore).expect("훅 재설치");
-            assert!(lock(&HOOK).is_some());
-            if let Some(app) = current_app() {
-                assert_eq!(app.id, app.path.to_lowercase());
-            }
-            stop();
+        if start(ignore).is_err() {
             assert!(lock(&HOOK).is_none());
+            return;
         }
+        assert!(lock(&HOOK).is_some());
+        stop();
+        assert!(lock(&HOOK).is_none());
+
+        start(ignore).expect("한 번 걸었던 환경에서는 다시 걸린다");
+        // 이미 돌고 있으면 멈추고 새로 건다.
+        start(ignore).expect("돌던 훅을 멈추고 다시 건다");
+        assert!(lock(&HOOK).is_some());
+        if let Some(app) = current_app() {
+            assert_eq!(app.id, app.path.to_lowercase());
+        }
+        stop();
+        assert!(lock(&HOOK).is_none());
     }
 }
