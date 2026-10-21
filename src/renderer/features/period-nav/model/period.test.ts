@@ -39,11 +39,19 @@ describe('switchTab', () => {
     expect(switchTab({ tab: 'day', date: '2026-09-30' }, 'week', today)).toEqual({ tab: 'week', monday: '2026-09-28' })
   })
 
-  it('주 → 월요일, 월 → 1일', () => {
+  it('지난 주 → 그 주 월요일, 지난 달 → 1일', () => {
     expect(switchTab({ tab: 'week', monday: '2026-09-28' }, 'day', today)).toEqual({ tab: 'day', date: '2026-09-28' })
     expect(switchTab({ tab: 'week', monday: '2026-09-28' }, 'month', today)).toEqual({ tab: 'month', month: '2026-09' })
     expect(switchTab({ tab: 'month', month: '2026-08' }, 'day', today)).toEqual({ tab: 'day', date: '2026-08-01' })
-    expect(switchTab({ tab: 'month', month: '2026-10' }, 'week', today)).toEqual({ tab: 'week', monday: '2026-09-28' })
+    expect(switchTab({ tab: 'month', month: '2026-08' }, 'week', today)).toEqual({ tab: 'week', monday: '2026-07-27' })
+  })
+
+  it('오늘을 품는 기간이면 오늘을 기준으로 삼는다', () => {
+    expect(switchTab({ tab: 'week', monday: '2026-10-19' }, 'day', today)).toEqual({ tab: 'day', date: today })
+    expect(switchTab({ tab: 'month', month: '2026-10' }, 'day', today)).toEqual({ tab: 'day', date: today })
+    expect(switchTab({ tab: 'month', month: '2026-10' }, 'week', today)).toEqual({ tab: 'week', monday: '2026-10-19' })
+    // 9월 28일 주는 10월 첫 주이기도 하지만 오늘을 품지 않으므로 월요일 기준
+    expect(switchTab({ tab: 'week', monday: '2026-09-28' }, 'month', today)).toEqual({ tab: 'month', month: '2026-09' })
   })
 })
 

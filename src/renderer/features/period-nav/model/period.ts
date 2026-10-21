@@ -64,9 +64,9 @@ export function canGoForward(p: Period, today: DateKey): boolean {
   return shift(p, 1, today) !== p
 }
 
-/** 같은 날짜를 품는 다른 탭의 기간. 주는 월요일, 월은 1일을 기준으로 삼는다. */
+/** 같은 날짜를 품는 다른 탭의 기간. 보던 기간이 오늘을 품으면 오늘을, 아니면 그 첫날(주는 월요일, 월은 1일)을 기준으로 삼는다. */
 export function switchTab(p: Period, tab: Tab, today: DateKey): Period {
-  return atDate(tab, startOf(p), today)
+  return atDate(tab, contains(p, today) ? today : startOf(p), today)
 }
 
 export function contains(p: Period, date: DateKey): boolean {
