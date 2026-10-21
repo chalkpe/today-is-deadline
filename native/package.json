@@ -1,0 +1,12 @@
+{
+  "name": "@today-is-deadline/native",
+  "private": true,
+  "napi": {
+    "binaryName": "index",
+    "targets": [
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin",
+      "x86_64-pc-windows-msvc"
+    ]
+  }
+}
