@@ -7,6 +7,7 @@ type Row = { id: number; date: DateKey; delta: number; memo: string; created_at:
 const toAdjustment = (r: Row): Adjustment => ({ id: r.id, date: r.date, delta: r.delta, memo: r.memo, createdAt: r.created_at })
 
 export function addAdjustment(db: Db, input: { date: DateKey; delta: number; memo: string }, createdAt: string): Adjustment {
+  if (!Number.isInteger(input.delta) || input.delta === 0) throw new Error('조정값은 0이 아닌 정수여야 합니다')
   const info = db.sqlite
     .prepare('INSERT INTO adjustments (date, delta, memo, created_at) VALUES (?, ?, ?, ?)')
     .run(input.date, input.delta, input.memo, createdAt)

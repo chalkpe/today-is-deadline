@@ -19,12 +19,12 @@ CREATE TABLE minute_counts (
   count INTEGER NOT NULL,
   PRIMARY KEY (date, minute, app_id)
 );
-CREATE INDEX idx_minute_counts_date ON minute_counts(date);
+CREATE INDEX minute_counts_date ON minute_counts(date);
 CREATE TABLE adjustments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   date TEXT NOT NULL,
-  delta INTEGER NOT NULL,
-  memo TEXT NOT NULL,
+  delta INTEGER NOT NULL CHECK (delta <> 0),
+  memo TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL
 );
 `
