@@ -8,4 +8,9 @@ export default defineConfig([
     files: ['./src/main/entities/**', './src/main/features/**'],
     rules: { 'fsd/no-segmentless-slices': 'off' },
   },
+  {
+    // 위젯 페이지(Task 15)에서 조립하기 전까지 참조가 없거나 하나뿐이다.
+    files: ['./src/renderer/entities/day-stat/**', './src/renderer/widgets/heatmap-panel/**'],
+    rules: { 'fsd/insignificant-slice': 'off' },
+  },
 ])

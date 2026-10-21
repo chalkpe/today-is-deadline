@@ -1,0 +1,59 @@
+import { describe, expect, it } from 'vitest'
+import { buildGrid, monthLabels, relativeMax } from './grid'
+
+// 2026-10-22는 목요일
+const TODAY = '2026-10-22'
+const RANGE = { start: '2026-10-05', end: TODAY }
+
+describe('buildGrid', () => {
+  const totals = [
+    { date: '2026-10-05', total: 50 },
+    { date: '2026-10-22', total: 200 },
+  ]
+  const columns = buildGrid(totals, RANGE, TODAY, { mode: 'relative', max: 200 })
+
+  it('3주 범위는 7칸짜리 열 3개', () => {
+    expect(columns).toHaveLength(3)
+    expect(columns.every((c) => c.cells.length === 7)).toBe(true)
+    expect(columns[0].monday).toBe('2026-10-05')
+  })
+
+  it('마지막 열은 목요일 이후가 미래, 오늘은 하나', () => {
+    const last = columns[2].cells
+    expect(last.map((c) => c.future)).toEqual([false, false, false, false, true, true, true])
+    expect(columns.flatMap((c) => c.cells).filter((c) => c.isToday)).toHaveLength(1)
+  })
+
+  it('상대 모드에서 최댓값 날은 강도 100, 없는 날은 0', () => {
+    expect(columns[2].cells[3].intensity).toBe(100)
+    expect(columns[0].cells[1].total).toBe(0)
+    expect(columns[0].cells[1].intensity).toBe(0)
+  })
+})
+
+describe('relativeMax', () => {
+  it('최댓값, 비면 0', () => {
+    expect(
+      relativeMax([
+        { date: 'a', total: 3 },
+        { date: 'b', total: 9 },
+      ]),
+    ).toBe(9)
+    expect(relativeMax([])).toBe(0)
+  })
+})
+
+describe('monthLabels', () => {
+  it('열 0은 항상, 월이 바뀌는 열마다 라벨', () => {
+    const columns = buildGrid([], { start: '2026-09-28', end: '2026-10-11' }, '2026-10-11', { mode: 'relative', max: 0 })
+    expect(monthLabels(columns)).toEqual([
+      { column: 0, label: '9월' },
+      { column: 1, label: '10월' },
+    ])
+  })
+
+  it('같은 달이면 열 0만', () => {
+    const columns = buildGrid([], { start: '2026-10-05', end: '2026-10-18' }, '2026-10-18', { mode: 'relative', max: 0 })
+    expect(monthLabels(columns)).toEqual([{ column: 0, label: '10월' }])
+  })
+})
