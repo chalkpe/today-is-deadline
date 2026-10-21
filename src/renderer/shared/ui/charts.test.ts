@@ -1,7 +1,7 @@
 import { APP_PALETTE, OTHERS_COLOR } from '@renderer/shared/lib/color'
 import type { AppShare } from '@shared/model/stats'
 import { describe, expect, it } from 'vitest'
-import { appColors, barHeights, gridIntensities, legendItems, OTHERS_ID, stackSegments, stripIntensities } from './charts'
+import { barHeights, coloredApps, gridIntensities, legendItems, OTHERS_ID, stackSegments, stripIntensities } from './charts'
 
 describe('stackSegments', () => {
   it('상위 앱 순서대로 쌓고 나머지는 others로 묶는다', () => {
@@ -68,23 +68,25 @@ describe('gridIntensities', () => {
   })
 })
 
-describe('appColors · legendItems', () => {
+describe('coloredApps · legendItems', () => {
   const app = (appId: string, name: string): AppShare => ({ appId, name, count: 1, ratio: 0.2 })
+  const colors = new Map([
+    ['a', APP_PALETTE[0]],
+    ['b', APP_PALETTE[2]],
+    ['c', OTHERS_COLOR],
+  ])
 
-  it('상위 앱은 팔레트, others는 기타색', () => {
-    const colors = appColors(['a', 'b'])
-    expect(colors.get('a')).toBe(APP_PALETTE[0])
-    expect(colors.get('b')).toBe(APP_PALETTE[1])
-    expect(colors.get(OTHERS_ID)).toBe(OTHERS_COLOR)
+  it('범주색을 받은 상위 앱만 고른다(기타색·색 없음은 기타로 묶임)', () => {
+    expect(coloredApps(['b', 'c', 'a', 'z'], colors)).toEqual(['b', 'a'])
   })
 
-  it('범례는 상위 앱 이름 순서이고 다른 앱이 있으면 기타를 붙인다', () => {
+  it('범례는 고른 앱 순서이고 다른 앱이 있으면 기타를 붙인다', () => {
     const apps = [app('a', '코드'), app('b', '브라우저'), app('c', '메모')]
-    expect(legendItems(apps, ['a', 'b'])).toEqual([
+    expect(legendItems(apps, ['b', 'a'], colors)).toEqual([
+      { key: 'b', label: '브라우저', color: APP_PALETTE[2] },
       { key: 'a', label: '코드', color: APP_PALETTE[0] },
-      { key: 'b', label: '브라우저', color: APP_PALETTE[1] },
       { key: OTHERS_ID, label: '기타', color: OTHERS_COLOR },
     ])
-    expect(legendItems(apps.slice(0, 2), ['a', 'b']).map((item) => item.key)).toEqual(['a', 'b'])
+    expect(legendItems(apps.slice(0, 2), ['b', 'a'], colors).map((item) => item.key)).toEqual(['b', 'a'])
   })
 })

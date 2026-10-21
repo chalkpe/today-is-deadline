@@ -10,6 +10,8 @@ import { formatCount, type MonthStats } from '@shared/model/stats'
 
 type Props = {
   stats: MonthStats
+  /** 앱 목록 막대 색(창이 열려 있는 동안 같은 앱은 같은 색) */
+  colors: Map<string, string>
   /** 달력 강도는 위젯과 같은 설정 모드를 따른다 */
   heatmap: Settings['heatmap']
   today: DateKey
@@ -18,7 +20,7 @@ type Props = {
 }
 
 /** 월 탭: 타일 4개 → 달력 → 앱별 목록 */
-export function MonthView({ stats, heatmap, today, onSelectDay }: Props) {
+export function MonthView({ stats, colors, heatmap, today, onSelectDay }: Props) {
   const { total, activeDays, bestDay } = stats
   // 상대 모드면 이달 안의 최댓값 기준
   const ctx: IntensityContext =
@@ -51,7 +53,7 @@ export function MonthView({ stats, heatmap, today, onSelectDay }: Props) {
       )}
       {stats.apps.length > 0 && (
         <Card heading="앱별">
-          <AppList apps={stats.apps} />
+          <AppList apps={stats.apps} colors={colors} />
         </Card>
       )}
     </div>

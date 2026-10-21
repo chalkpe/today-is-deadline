@@ -1,6 +1,6 @@
 import { AppList } from '@renderer/shared/ui/AppList'
 import { Card, EmptyCard } from '@renderer/shared/ui/Card'
-import { appColors, legendItems, stackSegments } from '@renderer/shared/ui/charts'
+import { coloredApps, legendItems, stackSegments } from '@renderer/shared/ui/charts'
 import { HourAxis } from '@renderer/shared/ui/HourAxis'
 import { Legend } from '@renderer/shared/ui/Legend'
 import { StackedBars } from '@renderer/shared/ui/StackedBars'
@@ -10,15 +10,21 @@ import { type DayStats, formatCount, formatDuration, formatMinute } from '@share
 
 const BARS_HEIGHT = 160
 
-type Props = { stats: DayStats; baseColor: string }
+type Props = {
+  stats: DayStats
+  /** 상위 앱 색(창이 열려 있는 동안 같은 앱은 같은 색) */
+  colors: Map<string, string>
+  baseColor: string
+}
 
 /** 일 탭: 타일 4개 → 시간별 누적 막대 + 10분 띠 → 앱별 목록 */
-export function DayView({ stats, baseColor }: Props) {
-  const { total, adjustment, peakHour, longestGap, topApps } = stats
+export function DayView({ stats, colors, baseColor }: Props) {
+  const { total, adjustment, peakHour, longestGap } = stats
+  const top = coloredApps(stats.topApps, colors)
   const bars = stats.hourly.map((bucket) => ({
     key: String(bucket.hour),
     total: bucket.total,
-    segments: stackSegments(bucket.byApp, topApps),
+    segments: stackSegments(bucket.byApp, top),
   }))
   return (
     <div className="flex flex-col gap-4">
@@ -45,8 +51,8 @@ export function DayView({ stats, baseColor }: Props) {
         <EmptyCard>기록 없음</EmptyCard>
       ) : (
         <>
-          <Card heading="시간별 타수" aside={<Legend items={legendItems(stats.apps, topApps)} />}>
-            <StackedBars bars={bars} colors={appColors(topApps)} height={BARS_HEIGHT} />
+          <Card heading="시간별 타수" aside={<Legend items={legendItems(stats.apps, top, colors)} />}>
+            <StackedBars bars={bars} colors={colors} height={BARS_HEIGHT} />
             <HourAxis />
           </Card>
           <Card heading="10분 단위">
@@ -57,7 +63,7 @@ export function DayView({ stats, baseColor }: Props) {
       )}
       {stats.apps.length > 0 && (
         <Card heading="앱별">
-          <AppList apps={stats.apps} />
+          <AppList apps={stats.apps} colors={colors} />
         </Card>
       )}
     </div>

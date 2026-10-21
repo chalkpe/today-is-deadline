@@ -1,4 +1,4 @@
-import { assignAppColors, OTHERS_COLOR } from '@renderer/shared/lib/color'
+import { OTHERS_COLOR } from '@renderer/shared/lib/color'
 import { intensityRelative } from '@shared/model/intensity'
 import type { AppShare } from '@shared/model/stats'
 
@@ -35,15 +35,17 @@ export function gridIntensities(grid: number[][]): number[][] {
   return grid.map((row) => row.map((value) => intensityRelative(value, max)))
 }
 
-/** 상위 앱의 범주색 + others의 기타색 */
-export function appColors(topApps: string[]): Map<string, string> {
-  return assignAppColors(topApps).set(OTHERS_ID, OTHERS_COLOR)
+/** 범주색(기타색이 아닌 색)을 받은 상위 앱. 누적 막대는 이 앱들만 따로 쌓고 나머지는 기타로 묶는다. */
+export function coloredApps(topApps: string[], colors: Map<string, string>): string[] {
+  return topApps.filter((appId) => {
+    const color = colors.get(appId)
+    return color !== undefined && color !== OTHERS_COLOR
+  })
 }
 
-/** 누적 막대의 범례. 상위 앱 밖의 앱이 있으면 '기타'를 붙인다. */
-export function legendItems(apps: AppShare[], topApps: string[]): LegendItem[] {
-  const colors = appColors(topApps)
+/** 누적 막대의 범례. colored(coloredApps) 밖의 앱이 있으면 '기타'를 붙인다. */
+export function legendItems(apps: AppShare[], colored: string[], colors: Map<string, string>): LegendItem[] {
   const names = new Map(apps.map((app) => [app.appId, app.name]))
-  const items = topApps.map((appId) => ({ key: appId, label: names.get(appId) ?? appId, color: colors.get(appId) ?? OTHERS_COLOR }))
-  return apps.length > topApps.length ? [...items, { key: OTHERS_ID, label: '기타', color: OTHERS_COLOR }] : items
+  const items = colored.map((appId) => ({ key: appId, label: names.get(appId) ?? appId, color: colors.get(appId) ?? OTHERS_COLOR }))
+  return apps.length > colored.length ? [...items, { key: OTHERS_ID, label: '기타', color: OTHERS_COLOR }] : items
 }

@@ -46,10 +46,12 @@ function Content({ view: { settings, data, failed }, today, onSelectDay }: Conte
   if (!settings || !data) return null
   switch (data.tab) {
     case 'day':
-      return <DayView stats={data.stats} baseColor={settings.heatmap.baseColor} />
+      return <DayView stats={data.stats} colors={data.colors} baseColor={settings.heatmap.baseColor} />
     case 'week':
-      return <WeekView stats={data.stats} baseColor={settings.heatmap.baseColor} today={today} onSelectDay={onSelectDay} />
+      return (
+        <WeekView stats={data.stats} colors={data.colors} baseColor={settings.heatmap.baseColor} today={today} onSelectDay={onSelectDay} />
+      )
     case 'month':
-      return <MonthView stats={data.stats} heatmap={settings.heatmap} today={today} onSelectDay={onSelectDay} />
+      return <MonthView stats={data.stats} colors={data.colors} heatmap={settings.heatmap} today={today} onSelectDay={onSelectDay} />
   }
 }

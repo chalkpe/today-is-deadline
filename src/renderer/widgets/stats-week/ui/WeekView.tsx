@@ -1,6 +1,6 @@
 import { AppList } from '@renderer/shared/ui/AppList'
 import { Card, EmptyCard } from '@renderer/shared/ui/Card'
-import { appColors, legendItems, stackSegments } from '@renderer/shared/ui/charts'
+import { coloredApps, legendItems, stackSegments } from '@renderer/shared/ui/charts'
 import { DowHourGrid } from '@renderer/shared/ui/DowHourGrid'
 import { Legend } from '@renderer/shared/ui/Legend'
 import { StackedBars } from '@renderer/shared/ui/StackedBars'
@@ -12,6 +12,8 @@ const BARS_HEIGHT = 160
 
 type Props = {
   stats: WeekStats
+  /** 상위 앱 색(창이 열려 있는 동안 같은 앱은 같은 색) */
+  colors: Map<string, string>
   baseColor: string
   today: DateKey
   /** 날짜 막대를 누르면 그 날짜의 일 탭으로 간다 */
@@ -19,12 +21,13 @@ type Props = {
 }
 
 /** 주 탭: 타일 4개 → 날짜별 누적 막대 + 요일×시간 히트맵 → 앱별 목록 */
-export function WeekView({ stats, baseColor, today, onSelectDay }: Props) {
-  const { total, activeDays, bestDay, topApps } = stats
+export function WeekView({ stats, colors, baseColor, today, onSelectDay }: Props) {
+  const { total, activeDays, bestDay } = stats
+  const top = coloredApps(stats.topApps, colors)
   const bars = stats.daily.map((day) => ({
     key: day.date,
     total: day.total,
-    segments: stackSegments(day.byApp, topApps),
+    segments: stackSegments(day.byApp, top),
     label: WEEKDAYS_KO[weekdayIndex(day.date)],
     disabled: day.date > today,
   }))
@@ -44,8 +47,8 @@ export function WeekView({ stats, baseColor, today, onSelectDay }: Props) {
         <EmptyCard>기록 없음</EmptyCard>
       ) : (
         <>
-          <Card heading="날짜별 타수" aside={<Legend items={legendItems(stats.apps, topApps)} />}>
-            <StackedBars bars={bars} colors={appColors(topApps)} height={BARS_HEIGHT} onSelect={onSelectDay} />
+          <Card heading="날짜별 타수" aside={<Legend items={legendItems(stats.apps, top, colors)} />}>
+            <StackedBars bars={bars} colors={colors} height={BARS_HEIGHT} onSelect={onSelectDay} />
           </Card>
           <Card heading="요일 × 시간">
             <DowHourGrid grid={stats.dowHour} baseColor={baseColor} />
@@ -54,7 +57,7 @@ export function WeekView({ stats, baseColor, today, onSelectDay }: Props) {
       )}
       {stats.apps.length > 0 && (
         <Card heading="앱별">
-          <AppList apps={stats.apps} />
+          <AppList apps={stats.apps} colors={colors} />
         </Card>
       )}
     </div>
