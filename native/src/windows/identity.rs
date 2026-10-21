@@ -110,6 +110,48 @@ impl PidCache {
     }
 }
 
+/// UWP 프레임 호스트 창이 포그라운드가 됐는데 앱 창(CoreWindow)이 아직 붙지 않아 호스트로 대신 센 상태.
+/// 시스템은 프레임이 앞으로 올 때 EVENT_SYSTEM_FOREGROUND를 한 번만 보내고 앱 창은 그 뒤에 붙으므로,
+/// 그 프레임이 포그라운드로 남아 있는 동안 정해진 횟수까지 앱 창을 다시 찾는다. `H`는 창 핸들이다.
+pub struct FrameWait<H> {
+    frame: H,
+    tries_left: u32,
+}
+
+/// `FrameWait::step` 한 번의 결과.
+#[derive(Debug, PartialEq, Eq)]
+pub enum FrameStep<A> {
+    /// 앱 창을 찾았다. 활성 앱을 이것으로 바꾸고 그만 기다린다.
+    Found(A),
+    /// 아직 붙지 않았다. 다음에 다시 찾는다.
+    Again,
+    /// 포그라운드가 바뀌었거나 횟수를 다 썼다. 그만 기다린다.
+    Stop,
+}
+
+impl<H: Copy + PartialEq> FrameWait<H> {
+    pub fn new(frame: H, tries: u32) -> Self {
+        Self {
+            frame,
+            tries_left: tries,
+        }
+    }
+
+    /// 기다리는 프레임이 아직 `foreground`이고 횟수가 남았으면 `find`로 그 프레임에 붙은 앱을 한 번 찾는다.
+    /// 포그라운드가 바뀌었으면 찾지 않는다(새 포그라운드는 포그라운드 콜백이 따로 해석한다).
+    pub fn step<A>(&mut self, foreground: H, find: impl FnOnce(H) -> Option<A>) -> FrameStep<A> {
+        if foreground != self.frame || self.tries_left == 0 {
+            return FrameStep::Stop;
+        }
+        self.tries_left -= 1;
+        match find(self.frame) {
+            Some(app) => FrameStep::Found(app),
+            None if self.tries_left == 0 => FrameStep::Stop,
+            None => FrameStep::Again,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,5 +295,46 @@ mod tests {
         cache.insert(full, app(NOTEPAD));
         assert_eq!(cache.len(), 1);
         assert!(cache.get(full, NOTEPAD).is_some());
+    }
+
+    const FRAME: usize = 7;
+    const CALCULATOR: &str = "calculatorapp.exe";
+
+    fn not_attached(_frame: usize) -> Option<&'static str> {
+        None
+    }
+
+    fn must_not_search(_frame: usize) -> Option<&'static str> {
+        panic!("다시 찾으면 안 된다")
+    }
+
+    #[test]
+    fn 프레임이_포그라운드로_남아_있으면_앱_창이_붙을_때까지_다시_찾는다() {
+        let mut wait = FrameWait::new(FRAME, 3);
+        assert_eq!(wait.step(FRAME, not_attached), FrameStep::Again);
+        assert_eq!(wait.step(FRAME, not_attached), FrameStep::Again);
+        let found = wait.step(FRAME, |frame| {
+            assert_eq!(frame, FRAME);
+            Some(CALCULATOR)
+        });
+        assert_eq!(found, FrameStep::Found(CALCULATOR));
+    }
+
+    #[test]
+    fn 포그라운드가_바뀌면_찾지_않고_그만둔다() {
+        let mut wait = FrameWait::new(FRAME, 3);
+        assert_eq!(wait.step(FRAME + 1, must_not_search), FrameStep::Stop);
+    }
+
+    #[test]
+    fn 정해진_횟수를_다_쓰면_그만둔다() {
+        let mut wait = FrameWait::new(FRAME, 2);
+        assert_eq!(wait.step(FRAME, not_attached), FrameStep::Again);
+        assert_eq!(wait.step(FRAME, not_attached), FrameStep::Stop);
+        assert_eq!(wait.step(FRAME, must_not_search), FrameStep::Stop);
+        assert_eq!(
+            FrameWait::new(FRAME, 0).step(FRAME, must_not_search),
+            FrameStep::Stop
+        );
     }
 }

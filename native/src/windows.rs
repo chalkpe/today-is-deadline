@@ -6,7 +6,7 @@
 
 mod identity;
 
-use std::cell::{OnceCell, RefCell};
+use std::cell::{Cell, OnceCell, RefCell};
 use std::ffi::c_void;
 use std::ptr;
 use std::sync::mpsc::{self, SyncSender};
@@ -29,15 +29,16 @@ use ::windows::Win32::System::Threading::{
 use ::windows::Win32::UI::Accessibility::{SetWinEventHook, UnhookWinEvent, HWINEVENTHOOK};
 use ::windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, EnumChildWindows, GetForegroundWindow, GetMessageW, GetWindowThreadProcessId,
-    PeekMessageW, PostThreadMessageW, SetWindowsHookExW, UnhookWindowsHookEx,
+    KillTimer, PeekMessageW, PostThreadMessageW, SetTimer, SetWindowsHookExW, UnhookWindowsHookEx,
     EVENT_SYSTEM_FOREGROUND, KBDLLHOOKSTRUCT, MSG, PM_NOREMOVE, WH_KEYBOARD_LL,
-    WINEVENT_OUTOFCONTEXT, WM_KEYDOWN, WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP, WM_USER,
+    WINEVENT_OUTOFCONTEXT, WM_KEYDOWN, WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP, WM_TIMER,
+    WM_USER,
 };
 use napi::{Error, Result};
 
 use self::identity::{
     file_description_query, file_name, from_wide, identity_from_path, is_frame_host, to_wide,
-    units_at, PidCache,
+    units_at, FrameStep, FrameWait, PidCache,
 };
 use crate::filter::{is_modifier_vk, RepeatFilter};
 use crate::{AppIdentity, OnKeydown, PermissionStatus};
@@ -53,6 +54,10 @@ const IMAGE_PATH_CAPACITY: usize = 32_768;
 
 /// WM_QUIT을 보내지 못했을 때 다시 보내는 간격. 훅 스레드가 살아 있는 동안만 다시 보낸다.
 const STOP_RETRY: Duration = Duration::from_millis(10);
+
+/// UWP 프레임에 앱 창이 붙기를 기다릴 때 다시 찾는 간격(ms)과 횟수. 합쳐 5초 동안 기다린다.
+const FRAME_RETRY_MS: u32 = 100;
+const FRAME_RETRIES: u32 = 50;
 
 type AppCache = Arc<Mutex<Option<AppIdentity>>>;
 
@@ -71,8 +76,12 @@ thread_local! {
     static SINK: OnceCell<Sink> = const { OnceCell::new() };
     /// 떼지 않은 키를 기억하는 반복 필터. 키보드 훅 콜백만 쓴다.
     static FILTER: RefCell<RepeatFilter> = RefCell::new(RepeatFilter::new(REPEAT_TTL));
-    /// PID 캐시를 이어 쓰는 활성 앱 해석기. 포그라운드 콜백과 시작 시 초기화만 쓴다.
+    /// PID 캐시를 이어 쓰는 활성 앱 해석기. 포그라운드 콜백·프레임 타이머와 시작 시 초기화만 쓴다.
     static RESOLVER: RefCell<Resolver> = RefCell::new(Resolver::default());
+    /// 앱 창이 붙기를 기다리는 UWP 프레임. 포그라운드가 바뀔 때마다 새로 정하고 프레임 타이머가 쓴다.
+    static FRAME_WAIT: RefCell<Option<FrameWait<HWND>>> = const { RefCell::new(None) };
+    /// FRAME_WAIT이 있는 동안만 도는 스레드 타이머의 ID. 0이면 돌지 않는다.
+    static FRAME_TIMER: Cell<usize> = const { Cell::new(0) };
 }
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -199,8 +208,8 @@ fn run_hooks(on_keydown: OnKeydown, cache: AppCache, ready: SyncSender<Started>)
     // 포그라운드 훅을 건 뒤에 초기화해야 그 사이의 변경이 메시지 루프에서 처리되어 캐시가 최신으로 남는다.
     // 키보드 훅보다 먼저 하는 까닭: 저수준 키보드 훅이 걸린 뒤 메시지를 꺼내지 않는 시간이 길면(버전 리소스 읽기)
     // 그동안 온 키 입력이 시간 초과되어 시스템이 훅을 말없이 제거할 수 있다. WinEvent 훅에는 그런 제한이 없다.
-    let app = RESOLVER.with_borrow_mut(foreground_app);
-    *lock(&cache) = app;
+    // 안전: 인자 없이 포그라운드 창 핸들만 돌려준다.
+    track_foreground(unsafe { GetForegroundWindow() });
 
     // 전역(스레드 0) 훅에는 모듈 핸들을 넘기는 것이 문서의 규약이라 현재 모듈(실행 파일) 핸들을 넘긴다(rdev 등과 같은 관행).
     // 저수준 훅은 다른 프로세스에 주입되지 않으므로 핸들을 얻지 못하면 NULL로 건다. 콜백은 이 스레드의 메시지 루프에서 불린다.
@@ -209,6 +218,7 @@ fn run_hooks(on_keydown: OnKeydown, cache: AppCache, ready: SyncSender<Started>)
     // 안전: keyboard_proc는 이 모듈의 정적 함수라 훅이 걸려 있는 동안 내내 유효하다.
     let keyboard = unsafe { SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_proc), module, 0) };
     let Ok(keyboard) = keyboard else {
+        set_frame_timer(false);
         // 안전: foreground는 바로 위에서 이 스레드가 걸었고 아직 풀지 않은 훅이다.
         let _ = unsafe { UnhookWinEvent(foreground) };
         let _ = ready.send(Err(KEYBOARD_HOOK_FAILED));
@@ -219,11 +229,17 @@ fn run_hooks(on_keydown: OnKeydown, cache: AppCache, ready: SyncSender<Started>)
     let thread_id = unsafe { GetCurrentThreadId() };
     if ready.send(Ok(thread_id)).is_ok() {
         // GetMessageW는 WM_QUIT이면 0, 오류면 -1을 돌려준다. 두 훅 콜백은 이 호출 안에서 불린다.
-        // 이 스레드에는 창이 없어 꺼낸 메시지를 디스패치할 곳이 없으므로 버린다.
+        // 이 스레드에는 창이 없어 꺼낸 메시지를 디스패치할 곳이 없다. 창 없는 프레임 타이머의 WM_TIMER만 직접 처리하고
+        // 나머지는 버린다.
         // 안전: message는 이 스택의 MSG이고, hwnd None은 이 스레드의 모든 메시지를 뜻한다.
-        while unsafe { GetMessageW(&mut message, None, 0, 0) }.0 > 0 {}
+        while unsafe { GetMessageW(&mut message, None, 0, 0) }.0 > 0 {
+            if message.message == WM_TIMER && message.wParam.0 == FRAME_TIMER.get() {
+                retry_frame();
+            }
+        }
     }
 
+    set_frame_timer(false);
     // 안전: 두 핸들 모두 이 스레드가 걸고 아직 풀지 않은 훅이다. 풀고 나면 콜백이 더 불리지 않는다.
     unsafe {
         let _ = UnhookWinEvent(foreground);
@@ -276,7 +292,6 @@ fn emit_cached_app() {
 }
 
 /// EVENT_SYSTEM_FOREGROUND WinEvent 콜백. 새 포그라운드 창의 앱을 해석해 캐시에 넣는다.
-/// 해석하지 못하면(창이 이미 사라짐, 열 수 없는 프로세스) 이전 앱으로 잘못 세지 않도록 None을 넣는다.
 unsafe extern "system" fn foreground_proc(
     _hook: HWINEVENTHOOK,
     event: u32,
@@ -289,20 +304,83 @@ unsafe extern "system" fn foreground_proc(
     if event != EVENT_SYSTEM_FOREGROUND || hwnd.is_invalid() {
         return;
     }
+    track_foreground(hwnd);
+}
+
+/// 포그라운드 창의 앱을 해석해 캐시에 넣는다. 해석하지 못하면(창이 이미 사라짐, 열 수 없는 프로세스) 이전 앱으로
+/// 잘못 세지 않도록 None을 넣는다. UWP 프레임에 앱 창이 아직 붙지 않아 호스트를 넣었으면 프레임 타이머로 다시 찾고,
+/// 아니면 기다리던 프레임을 버린다.
+fn track_foreground(hwnd: HWND) {
     let resolved = RESOLVER.with(|resolver| {
         resolver
             .try_borrow_mut()
             .ok()
             .map(|mut resolver| resolver.window_app(hwnd))
     });
-    let Some(app) = resolved else {
+    let Some(window) = resolved else {
         return;
     };
+    let waiting = window.as_ref().is_some_and(|window| window.waiting);
+    set_cached_app(window.map(|window| window.app));
+    FRAME_WAIT.with(|wait| {
+        if let Ok(mut wait) = wait.try_borrow_mut() {
+            *wait = waiting.then(|| FrameWait::new(hwnd, FRAME_RETRIES));
+        }
+    });
+    set_frame_timer(waiting);
+}
+
+/// 프레임 타이머가 울릴 때 부른다. 기다리는 프레임이 아직 포그라운드면 붙은 앱 창을 다시 찾고, 찾으면 캐시를 바꾼다.
+fn retry_frame() {
+    // 안전: 인자 없이 포그라운드 창 핸들만 돌려준다.
+    let foreground = unsafe { GetForegroundWindow() };
+    let step = FRAME_WAIT.with(|wait| {
+        let mut wait = wait.try_borrow_mut().ok()?;
+        let step = wait.as_mut()?.step(foreground, |frame| {
+            RESOLVER.with(|resolver| resolver.try_borrow_mut().ok()?.hosted_app(frame))
+        });
+        Some(step)
+    });
+    match step {
+        Some(FrameStep::Again) => return,
+        Some(FrameStep::Found(app)) => set_cached_app(Some(app)),
+        Some(FrameStep::Stop) | None => {}
+    }
+    FRAME_WAIT.with(|wait| {
+        if let Ok(mut wait) = wait.try_borrow_mut() {
+            *wait = None;
+        }
+    });
+    set_frame_timer(false);
+}
+
+/// 프레임 타이머를 켜거나 끈다. 창 없는 스레드 타이머라 WM_TIMER가 이 스레드 큐로 오고 메시지 루프가 처리한다.
+fn set_frame_timer(on: bool) {
+    let timer = FRAME_TIMER.get();
+    if on && timer == 0 {
+        // 안전: 창 없이(None) 호출 스레드에 타이머를 만든다. 콜백이 없어 WM_TIMER 메시지로만 알린다.
+        // 실패하면 0이 돌아오고, 그때는 다시 찾지 않고 호스트로 센다.
+        FRAME_TIMER.set(unsafe { SetTimer(None, 0, FRAME_RETRY_MS, None) });
+    } else if !on && timer != 0 {
+        // 안전: timer는 이 스레드가 SetTimer로 만들고 아직 없애지 않은 타이머다.
+        let _ = unsafe { KillTimer(None, timer) };
+        FRAME_TIMER.set(0);
+    }
+}
+
+fn set_cached_app(app: Option<AppIdentity>) {
     SINK.with(|sink| {
         if let Some(sink) = sink.get() {
             *lock(&sink.cache) = app;
         }
     });
+}
+
+/// 창 하나를 해석한 결과.
+struct WindowApp {
+    app: AppIdentity,
+    /// UWP 프레임인데 앱 창이 아직 붙지 않아 호스트를 앱으로 썼다. 붙으면 다시 해석해야 한다.
+    waiting: bool,
 }
 
 /// 창 → 프로세스 → AppIdentity 해석기. 버전 리소스를 매번 읽지 않도록 PID별 결과를 캐시한다.
@@ -313,30 +391,46 @@ struct Resolver {
 
 impl Resolver {
     /// UWP 앱은 포그라운드 창이 ApplicationFrameHost.exe의 프레임이므로, 자식 창 중 다른 프로세스의 창을 찾아
-    /// 그 프로세스를 앱으로 본다. 찾지 못하면 호스트를 그대로 쓴다.
-    fn window_app(&mut self, hwnd: HWND) -> Option<AppIdentity> {
-        let host_pid = window_pid(hwnd)?;
-        let host_path = image_path(host_pid)?;
-        let (pid, path) = if is_frame_host(file_name(&host_path)) {
-            hosted_app_pid(hwnd, host_pid)
-                .and_then(|pid| Some((pid, image_path(pid)?)))
-                .unwrap_or((host_pid, host_path))
-        } else {
-            (host_pid, host_path)
-        };
-        if let Some(app) = self.apps.get(pid, &path) {
-            return Some(app.clone());
+    /// 그 프로세스를 앱으로 본다. 찾지 못하면 호스트를 그대로 쓰고 `waiting`을 켠다.
+    fn window_app(&mut self, hwnd: HWND) -> Option<WindowApp> {
+        let pid = window_pid(hwnd)?;
+        let path = image_path(pid)?;
+        let waiting = is_frame_host(file_name(&path));
+        if waiting {
+            if let Some(app) = self.hosted_app(hwnd) {
+                return Some(WindowApp {
+                    app,
+                    waiting: false,
+                });
+            }
         }
-        let app = identity_from_path(&path, file_description(&path).as_deref());
+        Some(WindowApp {
+            app: self.identity(pid, &path),
+            waiting,
+        })
+    }
+
+    /// 프레임 호스트 창에 붙은 UWP 앱. 앱 창이 아직 없거나 그 프로세스를 열 수 없으면 None.
+    fn hosted_app(&mut self, frame: HWND) -> Option<AppIdentity> {
+        let pid = hosted_app_pid(frame, window_pid(frame)?)?;
+        let path = image_path(pid)?;
+        Some(self.identity(pid, &path))
+    }
+
+    fn identity(&mut self, pid: u32, path: &str) -> AppIdentity {
+        if let Some(app) = self.apps.get(pid, path) {
+            return app.clone();
+        }
+        let app = identity_from_path(path, file_description(path).as_deref());
         self.apps.insert(pid, app.clone());
-        Some(app)
+        app
     }
 }
 
 fn foreground_app(resolver: &mut Resolver) -> Option<AppIdentity> {
     // 안전: 인자 없이 포그라운드 창 핸들만 돌려준다. 포커스가 옮겨 가는 중이면 NULL이고 window_app이 거른다.
     let hwnd = unsafe { GetForegroundWindow() };
-    resolver.window_app(hwnd)
+    resolver.window_app(hwnd).map(|window| window.app)
 }
 
 /// 창을 만든 프로세스의 ID. 창이 없거나 이미 사라졌으면 None.
@@ -583,7 +677,8 @@ mod tests {
             if hwnd.is_invalid() {
                 assert_eq!(*lock(&cache), Some(sample_app()));
             } else {
-                assert_eq!(*lock(&cache), Resolver::default().window_app(hwnd));
+                let window = Resolver::default().window_app(hwnd);
+                assert_eq!(*lock(&cache), window.map(|window| window.app));
             }
         });
     }
@@ -606,9 +701,49 @@ mod tests {
 
     #[test]
     fn 창이_없으면_활성_앱을_모른다() {
-        assert_eq!(Resolver::default().window_app(HWND::default()), None);
+        assert!(Resolver::default().window_app(HWND::default()).is_none());
         // NULL 프레임을 그대로 EnumChildWindows에 넘기면 모든 최상위 창을 돌아 GUI 세션에서는 Some이 나온다.
         assert_eq!(hosted_app_pid(HWND::default(), 0), None);
+    }
+
+    #[test]
+    fn 기다리던_프레임이_포그라운드가_아니면_캐시를_두고_프레임_타이머를_멈춘다() {
+        on_fresh_thread(|| {
+            let cache = install_sink(ignore, Some(sample_app()));
+            // 어떤 창도 아닌 핸들이라 포그라운드일 수 없다.
+            let frame = HWND(usize::MAX as *mut c_void);
+            FRAME_WAIT.set(Some(FrameWait::new(frame, FRAME_RETRIES)));
+            set_frame_timer(true);
+            assert_ne!(FRAME_TIMER.get(), 0);
+
+            retry_frame();
+            assert!(FRAME_WAIT.with_borrow(Option::is_none));
+            assert_eq!(FRAME_TIMER.get(), 0);
+            assert_eq!(*lock(&cache), Some(sample_app()));
+        });
+    }
+
+    #[test]
+    fn 프레임이_아닌_창이_앞으로_오면_프레임_기다리기를_그만둔다() {
+        on_fresh_thread(|| {
+            install_sink(ignore, None);
+            FRAME_WAIT.set(Some(FrameWait::new(HWND::default(), FRAME_RETRIES)));
+            set_frame_timer(true);
+
+            // 지금 포그라운드가 UWP 프레임이면 이 테스트가 볼 수 있는 것이 없어 건너뛴다. 그 밖의 창은 해석하지 못해도
+            // (CI처럼 포그라운드 창이 없어도) 기다리기를 그만둔다.
+            // 안전: 인자 없이 포그라운드 창 핸들만 돌려준다.
+            let hwnd = unsafe { GetForegroundWindow() };
+            let is_frame = window_pid(hwnd)
+                .and_then(image_path)
+                .is_some_and(|path| is_frame_host(file_name(&path)));
+            if is_frame {
+                return;
+            }
+            track_foreground(hwnd);
+            assert!(FRAME_WAIT.with_borrow(Option::is_none));
+            assert_eq!(FRAME_TIMER.get(), 0);
+        });
     }
 
     #[test]
