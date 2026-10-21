@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "pretendard/dist/web/static/pretendard.css";
 
+/* renderer 빌드 루트(src/app/renderer) 밖의 FSD 레이어도 클래스를 찾게 한다 */
+@source "../../renderer";
+
 body {
   font-family: Pretendard, system-ui, sans-serif;
 }
