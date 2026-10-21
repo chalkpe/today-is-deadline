@@ -57,6 +57,7 @@ export function createCounting({ hook, db, settings, log, send }: Deps): Countin
   const session = createCountingSession({
     counter,
     permissionStatus: () => hook.permissionStatus(),
+    requestPermission: () => hook.requestPermission(),
     settings,
     log,
     onStatus: (status) => send(PUSH.PERMISSION, status),

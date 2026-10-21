@@ -23,14 +23,15 @@ function setup(initial: { status?: PermissionStatus; enabled?: boolean; failures
     isRunning: () => running,
   }
   const permissionStatus = vi.fn(() => env.status)
+  const requestPermission = vi.fn()
   const settings = {
     get: (): Settings => ({ ...DEFAULT_SETTINGS, counting: { enabled: env.enabled } }),
   }
   const log = { info: vi.fn(), error: vi.fn() }
   const onStatus = vi.fn()
   const onRunning = vi.fn()
-  const session = createCountingSession({ counter, permissionStatus, settings, log, onStatus, onRunning })
-  return { env, counter, permissionStatus, log, onStatus, onRunning, session }
+  const session = createCountingSession({ counter, permissionStatus, requestPermission, settings, log, onStatus, onRunning })
+  return { env, counter, permissionStatus, requestPermission, log, onStatus, onRunning, session }
 }
 
 describe('createCountingSession', () => {
@@ -112,6 +113,52 @@ describe('createCountingSession', () => {
     t.session.sync()
     expect(t.counter.start).toHaveBeenCalledTimes(1)
     expect(t.onStatus).toHaveBeenCalledTimes(1)
+  })
+
+  it('처음 거부를 보면 권한 요청을 한 번 부르고, 이후 재확인·다시 거부돼도 부르지 않는다', () => {
+    const t = setup({ status: 'denied' })
+    t.session.sync()
+    expect(t.requestPermission).toHaveBeenCalledTimes(1)
+    expect(t.log.info).toHaveBeenCalledWith('permission: requested')
+    vi.advanceTimersByTime(10_000)
+    t.session.sync()
+    expect(t.requestPermission).toHaveBeenCalledTimes(1)
+    t.env.status = 'granted'
+    vi.advanceTimersByTime(2000)
+    t.env.status = 'denied'
+    t.session.sync()
+    vi.advanceTimersByTime(4000)
+    expect(t.requestPermission).toHaveBeenCalledTimes(1)
+  })
+
+  it('처음부터 허용이거나 not-required면 권한 요청을 부르지 않는다', () => {
+    for (const status of ['granted', 'not-required'] as const) {
+      const t = setup({ status })
+      t.session.sync()
+      t.session.sync()
+      expect(t.requestPermission).not.toHaveBeenCalled()
+    }
+  })
+
+  it('훅 시작 실패로 생긴 거부(OS 상태는 허용)에는 권한 요청을 부르지 않는다', () => {
+    const t = setup({ failures: 2 })
+    t.session.sync()
+    vi.advanceTimersByTime(4000)
+    expect(t.session.status()).toBe('granted')
+    expect(t.requestPermission).not.toHaveBeenCalled()
+  })
+
+  it('권한 요청이 던져도 기록만 하고 안내·재확인은 그대로 간다', () => {
+    const t = setup({ status: 'denied' })
+    t.requestPermission.mockImplementation(() => {
+      throw new Error('요청 실패')
+    })
+    expect(() => t.session.sync()).not.toThrow()
+    expect(t.log.error.mock.calls[0][0]).toBe('permission: request failed')
+    expect(t.session.status()).toBe('denied')
+    vi.advanceTimersByTime(4000)
+    expect(t.requestPermission).toHaveBeenCalledTimes(1)
+    expect(t.permissionStatus).toHaveBeenCalledTimes(3)
   })
 
   it('dispose는 재확인을 멈춘다', () => {

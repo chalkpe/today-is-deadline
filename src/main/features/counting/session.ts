@@ -14,6 +14,8 @@ export type CountingSession = {
 type Deps = {
   counter: Pick<Counter, 'start' | 'stop' | 'isRunning'>
   permissionStatus: () => PermissionStatus
+  /** OS 권한 요청. macOS는 입력 모니터링 목록에 앱을 올린다. */
+  requestPermission: () => void
   settings: { get(): Settings }
   log: Pick<Logger, 'info' | 'error'>
   onStatus: (status: PermissionStatus) => void
@@ -24,6 +26,7 @@ type Deps = {
 export function createCountingSession({
   counter,
   permissionStatus,
+  requestPermission,
   settings,
   log,
   onStatus,
@@ -33,6 +36,7 @@ export function createCountingSession({
   let status: PermissionStatus | null = null
   let running = counter.isRunning()
   let startFailed = false
+  let requested = false
   let poll: ReturnType<typeof setInterval> | undefined
 
   const readStatus = (): PermissionStatus => {
@@ -53,6 +57,18 @@ export function createCountingSession({
       if (!startFailed) log.error('counting: start failed', err)
       startFailed = true
       return false
+    }
+  }
+
+  // 스펙 8.6: 처음 거부를 보면 한 번만 요청해 입력 모니터링 목록에 앱을 등록시킨다. 재확인마다 부르지 않는다.
+  const requestOnce = () => {
+    if (requested) return
+    requested = true
+    try {
+      requestPermission()
+      log.info('permission: requested')
+    } catch (err) {
+      log.error('permission: request failed', err)
     }
   }
 
@@ -88,6 +104,7 @@ export function createCountingSession({
 
   function sync() {
     const native = readStatus()
+    if (native === 'denied') requestOnce()
     let effective = native
     if (!settings.get().counting.enabled) {
       startFailed = false
