@@ -24,6 +24,6 @@ export interface IEvents {
   'permission:request': { args: undefined; response: undefined }
   'permission:openSettings': { args: undefined; response: undefined }
   'sound:pickFile': { args: undefined; response: string | null }
-  'sound:url': { args: SoundSetting; response: string } // 'sound://builtin/rooster' | 'sound://file'
+  'sound:url': { args: SoundSetting; response: string } // 'sound://builtin/rooster' | 'sound://file/<경로 토큰 8자리 hex>'
   'app:icon': { args: string; response: string | null } // data URL
 }
