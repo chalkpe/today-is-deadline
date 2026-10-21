@@ -159,9 +159,56 @@ describe('createCounter', () => {
     cb(APP)
     expect(getApp(db, APP.id)?.iconPng).toBeNull()
     cb(APP)
-    expect(getIcon).toHaveBeenCalledTimes(1)
     await vi.advanceTimersByTimeAsync(0)
+    expect(getIcon).toHaveBeenCalledTimes(1)
     expect(getApp(db, APP.id)?.iconPng).toEqual(png)
+    c.stop()
+  })
+
+  it('첫 upsert 실패 후 복구되면 다음 키다운에서 행이 만들어지고 기록된다', () => {
+    const c = make({ onError: () => {} })
+    c.start()
+    db.sqlite.exec('ALTER TABLE apps RENAME TO apps_x')
+    cb(APP)
+    expect(c.pending()).toBe(0)
+    db.sqlite.exec('ALTER TABLE apps_x RENAME TO apps')
+    cb(APP)
+    c.flush()
+    expect(getApp(db, APP.id)).not.toBeNull()
+    expect(total('2026-10-22')).toBe(1)
+    c.stop()
+  })
+
+  it('hook.start가 throw하면 실행 상태가 아니고 재시도 가능', () => {
+    let calls = 0
+    const bad: NativeHook = {
+      ...hook,
+      start: (c) => {
+        calls++
+        if (calls === 1) throw new Error('perm')
+        cb = c
+      },
+    }
+    const c = make({ hook: bad })
+    expect(() => c.start()).toThrow('perm')
+    expect(c.isRunning()).toBe(false)
+    expect(vi.getTimerCount()).toBe(0)
+    c.start()
+    expect(calls).toBe(2)
+    expect(c.isRunning()).toBe(true)
+    c.stop()
+  })
+
+  it('getIcon이 동기 throw해도 키다운은 집계된다', async () => {
+    const c = make({
+      getIcon: () => {
+        throw new Error('sync')
+      },
+    })
+    c.start()
+    cb(APP)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(c.pending()).toBe(1)
     c.stop()
   })
 

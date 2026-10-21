@@ -82,10 +82,13 @@ export function createCounter(deps: CounterDeps): Counter {
       const app = normalizeApp(raw)
       const at = now()
       if (!seenApps.has(app.id)) {
-        seenApps.add(app.id)
         upsertApp(db, app, null, at.toISOString())
+        // 행 생성에 성공한 뒤에만 본 앱으로 기록한다(실패하면 다음 키다운에서 재시도)
+        seenApps.add(app.id)
         if (app.path !== '') {
-          getIcon(app.path)
+          // 동기 throw도 삼키고 키다운 집계는 항상 진행한다
+          Promise.resolve()
+            .then(() => getIcon(app.path))
             .then((png) => {
               if (png) upsertApp(db, app, png, now().toISOString())
             })
@@ -104,7 +107,13 @@ export function createCounter(deps: CounterDeps): Counter {
     start() {
       if (running) return
       running = true
-      hook.start(onNativeKeydown)
+      try {
+        hook.start(onNativeKeydown)
+      } catch (err) {
+        // 시작 실패는 상태를 되돌리고 호출 측(권한 안내)에 전파한다
+        running = false
+        throw err
+      }
       timer = deps.setInterval(flush, flushIntervalMs)
     },
     stop() {
