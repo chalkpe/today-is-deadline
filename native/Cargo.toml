@@ -11,6 +11,17 @@ crate-type = ["cdylib"]
 napi = { version = "3", features = ["napi9"] }
 napi-derive = "3"
 
+[target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6.2"
+core-foundation = "0.10.1"
+core-graphics = "0.25.0"
+objc2 = "0.6.5"
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSRunningApplication", "NSWorkspace"] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "block2", "NSDictionary", "NSNotification", "NSOperation", "NSString", "NSURL"] }
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["NSObject"] }
+
 [build-dependencies]
 napi-build = "2"
 
