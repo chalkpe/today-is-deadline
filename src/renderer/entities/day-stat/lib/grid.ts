@@ -31,13 +31,17 @@ export function relativeMax(totals: DayTotal[]): number {
   return totals.reduce((max, t) => Math.max(max, t.total), 0)
 }
 
-/** 열 0은 항상, 이후 월요일의 달이 바뀌는 열마다 'n월' 라벨을 단다. */
+/** 열 0 라벨과 다음 라벨 사이에 필요한 최소 열 간격. 12px 간격에서 2열 안이면 글자가 겹친다. */
+const FIRST_LABEL_MIN_GAP = 3
+
+/** 월요일의 달이 바뀌는 열마다 'n월' 라벨을 단다. 열 0은 다음 라벨과 겹치지 않을 때만 단다. */
 export function monthLabels(columns: GridColumn[]): { column: number; label: string }[] {
   const labels: { column: number; label: string }[] = []
   columns.forEach((col, index) => {
     const month = col.monday.slice(5, 7)
     if (index === 0 || month !== columns[index - 1].monday.slice(5, 7)) labels.push({ column: index, label: `${Number(month)}월` })
   })
+  if (labels.length > 1 && labels[1].column < FIRST_LABEL_MIN_GAP) labels.shift()
   return labels
 }
 

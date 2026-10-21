@@ -15,10 +15,17 @@ export function DayDetail({ detail, showIcons }: Props) {
           <div className="shrink-0 text-[10px] text-neutral-400">{`조정 ${detail.adjustment >= 0 ? '+' : ''}${formatCount(detail.adjustment)}`}</div>
         )}
       </div>
+      {shown.length === 0 && (
+        // 앱 기록이 없는 날(0타·조정만 있는 날)도 펼침은 한 줄을 그린다. 높이는 detailRows 최소 1과 맞는다.
+        <div className="flex items-center text-neutral-500" style={{ height: DETAIL_ROW_HEIGHT }}>
+          기록 없음
+        </div>
+      )}
       {shown.map((app) => (
         <div key={app.appId} className="flex items-center gap-1.5" style={{ height: DETAIL_ROW_HEIGHT }}>
           {showIcons && <AppIcon appId={app.appId} />}
-          <span className="w-20 shrink-0 truncate">{app.name}</span>
+          {/* 좁은 창에서는 막대 다음으로 이름이 줄어 숫자가 패널 밖으로 밀리지 않는다 */}
+          <span className="w-20 min-w-0 truncate">{app.name}</span>
           <div className="h-1.5 min-w-0 flex-1 rounded-full bg-neutral-700">
             <div className="h-full rounded-full bg-neutral-300" style={{ width: `${app.ratio * 100}%` }} />
           </div>

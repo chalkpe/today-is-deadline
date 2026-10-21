@@ -44,11 +44,17 @@ describe('relativeMax', () => {
 })
 
 describe('monthLabels', () => {
-  it('열 0은 항상, 월이 바뀌는 열마다 라벨', () => {
-    const columns = buildGrid([], { start: '2026-09-28', end: '2026-10-11' }, '2026-10-11', { mode: 'relative', max: 0 })
-    expect(monthLabels(columns)).toEqual([
+  const grid = (start: string, end: string) => buildGrid([], { start, end }, end, { mode: 'relative', max: 0 })
+
+  it('열 0 라벨은 다음 2열 안에 다른 라벨이 오면 겹치므로 생략한다', () => {
+    expect(monthLabels(grid('2026-09-28', '2026-10-11'))).toEqual([{ column: 1, label: '10월' }])
+    expect(monthLabels(grid('2026-09-21', '2026-10-11'))).toEqual([{ column: 2, label: '10월' }])
+  })
+
+  it('다음 라벨이 3열 이상 떨어져 있으면 열 0 라벨을 남긴다', () => {
+    expect(monthLabels(grid('2026-09-14', '2026-10-11'))).toEqual([
       { column: 0, label: '9월' },
-      { column: 1, label: '10월' },
+      { column: 3, label: '10월' },
     ])
   })
 
@@ -65,5 +71,9 @@ describe('detailRowCount', () => {
     expect(detailRowCount(detail(0))).toBe(0)
     expect(detailRowCount(detail(5))).toBe(5)
     expect(detailRowCount(detail(8))).toBe(6)
+  })
+
+  it('조정만 있고 앱 기록이 없는 날도 앱 행은 0(기록 없음 행은 화면이 따로 그린다)', () => {
+    expect(detailRowCount({ date: TODAY, total: 500, adjustment: 500, apps: [] })).toBe(0)
   })
 })
