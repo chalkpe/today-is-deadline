@@ -3,9 +3,10 @@ import { formatDateKo } from '@shared/model/calendar'
 import { DETAIL_HEADER_HEIGHT, DETAIL_ROW_HEIGHT } from '@shared/model/layout'
 import { type DayDetail as DayDetailData, foldApps, formatCount, formatPercent } from '@shared/model/stats'
 
-type Props = { detail: DayDetailData; showIcons: boolean }
+// 앱 아이콘은 늘 보인다. 설정의 showIcons는 잠금·설정 아이콘만 끈다(스펙 8.2·8.3).
+type Props = { detail: DayDetailData }
 
-export function DayDetail({ detail, showIcons }: Props) {
+export function DayDetail({ detail }: Props) {
   const { shown, others } = foldApps(detail.apps, 5)
   return (
     <div className="text-[11px] text-neutral-200">
@@ -23,7 +24,7 @@ export function DayDetail({ detail, showIcons }: Props) {
       )}
       {shown.map((app) => (
         <div key={app.appId} className="flex items-center gap-1.5" style={{ height: DETAIL_ROW_HEIGHT }}>
-          {showIcons && <AppIcon appId={app.appId} />}
+          <AppIcon appId={app.appId} />
           {/* 좁은 창에서는 막대 다음으로 이름이 줄어 숫자가 패널 밖으로 밀리지 않는다 */}
           <span className="w-20 min-w-0 truncate">{app.name}</span>
           <div className="h-1.5 min-w-0 flex-1 rounded-full bg-neutral-700">

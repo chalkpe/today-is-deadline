@@ -67,7 +67,7 @@ function Panel({ data }: { data: WidgetData }) {
           {detail && (
             // 격자 밖(내역) 클릭은 펼침을 닫는다
             <div className={cn('shrink-0', NO_DRAG_REGION)} onClick={() => select(null)}>
-              <DayDetail detail={detail} showIcons={showIcons} />
+              <DayDetail detail={detail} />
             </div>
           )}
           {showTodayCount && (
