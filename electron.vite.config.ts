@@ -18,7 +18,8 @@ export default defineConfig({
   },
   preload: {
     resolve: { alias },
-    build: { externalizeDeps: true, lib: { entry: fromRoot('./src/app/preload/index.ts') } },
+    // 샌드박스 preload는 ESM을 실행하지 못하므로 CJS(index.cjs)로 내보낸다.
+    build: { externalizeDeps: true, lib: { entry: fromRoot('./src/app/preload/index.ts'), formats: ['cjs'] } },
   },
   renderer: {
     root: fromRoot('./src/app/renderer'),
