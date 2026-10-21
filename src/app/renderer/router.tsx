@@ -1,3 +1,5 @@
+import { AdjustPage } from '@renderer/pages/adjust'
+import { SettingsPage } from '@renderer/pages/settings'
 import { WidgetPage } from '@renderer/pages/widget'
 import { useEffect, useState } from 'react'
 
@@ -15,9 +17,11 @@ export function Router() {
 
   switch (routeOf(hash)) {
     case 'stats':
-    case 'settings':
-    case 'adjust':
       return <p>준비 중</p>
+    case 'settings':
+      return <SettingsPage />
+    case 'adjust':
+      return <AdjustPage />
     default:
       return <WidgetPage />
   }

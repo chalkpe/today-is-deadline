@@ -9,12 +9,13 @@ export default defineConfig([
     rules: { 'fsd/no-segmentless-slices': 'off' },
   },
   {
-    // 위젯 페이지만 쓰는 슬라이스(규칙을 끈 heatmap-panel의 참조는 세지 않아 day-stat도 포함)를 계획의 FSD 구조대로 둔다.
+    // 한 페이지만 쓰는 슬라이스(규칙을 끈 heatmap-panel의 참조는 세지 않아 day-stat도 포함)를 계획의 FSD 구조대로 둔다.
     files: [
       './src/renderer/entities/day-stat/**',
       './src/renderer/widgets/heatmap-panel/**',
-      './src/renderer/features/alert-audio/**',
       './src/renderer/features/resize-handle/**',
+      './src/renderer/features/settings-form/**',
+      './src/renderer/features/adjust-form/**',
     ],
     rules: { 'fsd/insignificant-slice': 'off' },
   },
