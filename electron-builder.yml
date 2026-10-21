@@ -17,8 +17,11 @@ extraResources:
     to: icons
   - from: native
     to: native
+    # package.json은 로더(index.js)를 CommonJS로 읽게 하는 경계다. 빠지면 상위 폴더(저장소 안의 release/ 등)에 있는
+    # "type": "module" package.json 때문에 index.js가 ES 모듈로 읽혀 앱이 시작하지 못한다.
     filter:
       - index.js
+      - package.json
       - '*.node'
 mac:
   target:
