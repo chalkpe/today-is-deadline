@@ -7,6 +7,8 @@ import {
   formatWeekRangeKo,
   fromDateKey,
   heatmapRange,
+  isDateKey,
+  isMonthKey,
   minuteOfDay,
   mondayOf,
   monthRange,
@@ -59,5 +61,27 @@ describe('calendar', () => {
     expect(formatWeekRangeKo('2026-10-20')).toBe('10월 20일 ~ 26일')
     expect(formatWeekRangeKo('2026-10-27')).toBe('10월 27일 ~ 11월 2일')
     expect(formatMonthKo('2026-10')).toBe('2026년 10월')
+  })
+  it('isDateKey는 형식과 실제 날짜를 모두 본다', () => {
+    expect(isDateKey('2026-10-22')).toBe(true)
+    expect(isDateKey('2024-02-29')).toBe(true)
+    expect(isDateKey('2026-02-29')).toBe(false)
+    expect(isDateKey('2026-13-01')).toBe(false)
+    expect(isDateKey('2026-10-32')).toBe(false)
+    expect(isDateKey('2026-1-2')).toBe(false)
+    expect(isDateKey('2026-10-22T00:00')).toBe(false)
+    expect(isDateKey(' 2026-10-22')).toBe(false)
+    expect(isDateKey(20261022)).toBe(false)
+    expect(isDateKey(null)).toBe(false)
+  })
+  it('isMonthKey는 YYYY-MM과 1~12월만', () => {
+    expect(isMonthKey('2026-10')).toBe(true)
+    expect(isMonthKey('2026-01')).toBe(true)
+    expect(isMonthKey('2026-12')).toBe(true)
+    expect(isMonthKey('2026-00')).toBe(false)
+    expect(isMonthKey('2026-13')).toBe(false)
+    expect(isMonthKey('2026-1')).toBe(false)
+    expect(isMonthKey('2026-10-01')).toBe(false)
+    expect(isMonthKey(undefined)).toBe(false)
   })
 })
