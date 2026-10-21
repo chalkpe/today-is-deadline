@@ -72,10 +72,31 @@ describe('createIdleAlert', () => {
   it('타이머 시각에 현재 getTimes 값을 쓴다', () => {
     const { alert, play, times } = make()
     alert.dispatch('enable')
-    times.idleMs = 1000
+    times.idleMs = 20_000
     alert.dispatch('keydown')
-    vi.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(20_000)
     expect(play).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['짧은', { idleMs: 1, repeatMs: 0 }, 10_000],
+    ['긴', { idleMs: 1e15, repeatMs: Number.POSITIVE_INFINITY }, 86_400_000],
+    ['NaN', { idleMs: Number.NaN, repeatMs: Number.NaN }, 10_000],
+  ])('getTimes가 터무니없이 %s 값을 줘도 타이머는 10초~하루로 자른다', (_, times, clamped) => {
+    const delays: number[] = []
+    const setTimeout = ((fn: () => void, ms: number) => {
+      delays.push(ms)
+      return globalThis.setTimeout(fn, ms)
+    }) as typeof globalThis.setTimeout
+    const play = vi.fn()
+    const alert = createIdleAlert({ getTimes: () => times, play, stop: () => {}, setTimeout, clearTimeout: globalThis.clearTimeout })
+    alert.dispatch('enable')
+    expect(delays).toEqual([clamped]) // 유휴 타이머
+    vi.advanceTimersByTime(clamped - 1)
+    expect(play).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(play).toHaveBeenCalledTimes(1)
+    expect(delays).toEqual([clamped, clamped]) // 반복 타이머
   })
 
   it('keydown을 반복해도 타이머는 하나', () => {
@@ -89,7 +110,7 @@ describe('createIdleAlert', () => {
   it('play 안에서 disable해도 타이머가 남지 않는다', () => {
     const ref: { alert?: ReturnType<typeof createIdleAlert> } = {}
     const alert = createIdleAlert({
-      getTimes: () => ({ idleMs: 10, repeatMs: 10 }),
+      getTimes: () => ({ idleMs: 10_000, repeatMs: 10_000 }),
       play: () => ref.alert?.dispatch('disable'),
       stop: () => {},
       setTimeout: globalThis.setTimeout,
@@ -97,7 +118,7 @@ describe('createIdleAlert', () => {
     })
     ref.alert = alert
     alert.dispatch('enable')
-    vi.advanceTimersByTime(10)
+    vi.advanceTimersByTime(10_000)
     expect(alert.state()).toBe('disabled')
     expect(vi.getTimerCount()).toBe(0)
   })
@@ -106,7 +127,7 @@ describe('createIdleAlert', () => {
     const ref: { alert?: ReturnType<typeof createIdleAlert> } = {}
     let calls = 0
     const alert = createIdleAlert({
-      getTimes: () => ({ idleMs: 10, repeatMs: 100 }),
+      getTimes: () => ({ idleMs: 10_000, repeatMs: 100_000 }),
       play: () => {
         calls++
         if (calls === 1) ref.alert?.dispatch('keydown')
@@ -117,16 +138,16 @@ describe('createIdleAlert', () => {
     })
     ref.alert = alert
     alert.dispatch('enable')
-    vi.advanceTimersByTime(10)
+    vi.advanceTimersByTime(10_000)
     expect(alert.state()).toBe('active')
     expect(vi.getTimerCount()).toBe(1)
-    vi.advanceTimersByTime(10)
+    vi.advanceTimersByTime(10_000)
     expect(calls).toBe(2)
   })
 
   it('play/stop이 throw해도 머신이 깨지지 않는다', () => {
     const alert = createIdleAlert({
-      getTimes: () => ({ idleMs: 10, repeatMs: 10 }),
+      getTimes: () => ({ idleMs: 10_000, repeatMs: 10_000 }),
       play: () => {
         throw new Error('x')
       },
@@ -137,7 +158,7 @@ describe('createIdleAlert', () => {
       clearTimeout: globalThis.clearTimeout,
     })
     alert.dispatch('enable')
-    vi.advanceTimersByTime(10)
+    vi.advanceTimersByTime(10_000)
     expect(alert.state()).toBe('alerting')
     expect(vi.getTimerCount()).toBe(1)
     alert.dispatch('keydown')

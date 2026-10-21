@@ -5,7 +5,14 @@ import { NumberInput } from '@renderer/shared/ui/NumberInput'
 import { RadioGroup } from '@renderer/shared/ui/RadioGroup'
 import { Section } from '@renderer/shared/ui/Section'
 import { Toggle } from '@renderer/shared/ui/Toggle'
-import { BUILTIN_SOUNDS, type BuiltinSoundName, type Settings, type SoundSetting } from '@shared/model/settings'
+import {
+  ALERT_SECONDS_MAX,
+  ALERT_SECONDS_MIN,
+  BUILTIN_SOUNDS,
+  type BuiltinSoundName,
+  type Settings,
+  type SoundSetting,
+} from '@shared/model/settings'
 import { fileNameOf } from '../model/form'
 import type { ChangeField } from '../model/useSettingsForm'
 
@@ -17,7 +24,7 @@ const SOUND_OPTIONS = BUILTIN_SOUNDS.map((name) => ({ value: name, label: SOUND_
 function Seconds({ value, onCommit }: { value: number; onCommit(text: string): void }) {
   return (
     <span className="flex items-center gap-1.5">
-      <NumberInput value={value} min={10} step={10} onCommit={onCommit} />
+      <NumberInput value={value} min={ALERT_SECONDS_MIN} max={ALERT_SECONDS_MAX} step={10} onCommit={onCommit} />
       <span className="text-neutral-400">초</span>
     </span>
   )
@@ -33,10 +40,10 @@ export function AlertSection({ alert, errors, onChange, onPreview }: Props) {
   return (
     <Section heading="알림" errors={errors}>
       <Toggle label="알림 켜기" checked={alert.enabled} onChange={(checked) => onChange('alert.enabled', checked)} />
-      <Field inline label="첫 알림까지" hint="입력이 멈추고 이 시간이 지나면 알립니다. 10초 이상.">
+      <Field inline label="첫 알림까지" hint="입력이 멈추고 이 시간이 지나면 알립니다. 10~86400초.">
         <Seconds value={alert.idleSeconds} onCommit={(text) => onChange('alert.idleSeconds', text)} />
       </Field>
-      <Field inline label="반복 간격" hint="다시 입력할 때까지 이 간격으로 반복합니다. 10초 이상.">
+      <Field inline label="반복 간격" hint="다시 입력할 때까지 이 간격으로 반복합니다. 10~86400초.">
         <Seconds value={alert.repeatSeconds} onCommit={(text) => onChange('alert.repeatSeconds', text)} />
       </Field>
       <Field label="소리">

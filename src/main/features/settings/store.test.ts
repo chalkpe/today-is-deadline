@@ -35,6 +35,18 @@ describe('createSettingsStore', () => {
     expect(s.alert).toEqual(DEFAULT_SETTINGS.alert)
   })
 
+  it('손으로 고친 파일의 범위 밖 대기 시간·반복 간격·임계값은 기본값으로 읽는다', () => {
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ alert: { idleSeconds: 0.001, repeatSeconds: 1e9 }, heatmap: { fixedThresholds: [4, 3, 2, 1] }, widget: { x: 7 } }),
+    )
+    const s = make().get()
+    expect(s.alert.idleSeconds).toBe(DEFAULT_SETTINGS.alert.idleSeconds)
+    expect(s.alert.repeatSeconds).toBe(DEFAULT_SETTINGS.alert.repeatSeconds)
+    expect(s.heatmap.fixedThresholds).toEqual(DEFAULT_SETTINGS.heatmap.fixedThresholds)
+    expect(s.widget.x).toBe(7)
+  })
+
   it('깨진 JSON은 기본값', () => {
     fs.writeFileSync(file, '{ not json')
     expect(make().get()).toEqual(DEFAULT_SETTINGS)

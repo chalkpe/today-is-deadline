@@ -42,10 +42,16 @@ export const DEFAULT_SETTINGS: Settings = {
   general: { openAtLogin: false },
 }
 
+/** 대기 시간(T1)·반복 간격(T2)의 범위(초). 하루를 넘는 값은 받지 않는다. */
+export const ALERT_SECONDS_MIN = 10
+export const ALERT_SECONDS_MAX = 86400
+
 export const SETTINGS_ERRORS = {
   thresholds: '임계값은 양의 정수 4개가 오름차순이어야 합니다',
-  idle: '대기 시간은 10초 이상이어야 합니다',
-  repeat: '반복 간격은 10초 이상이어야 합니다',
+  idle: '대기 시간은 10초 이상의 정수여야 합니다',
+  idleMax: '대기 시간은 86400초 이하여야 합니다',
+  repeat: '반복 간격은 10초 이상의 정수여야 합니다',
+  repeatMax: '반복 간격은 86400초 이하여야 합니다',
   soundFile: '소리 파일을 찾을 수 없습니다',
 } as const
 
@@ -61,6 +67,8 @@ const nullableNum = (v: unknown, d: number | null) =>
 
 const isThresholds = (v: unknown): v is FixedThresholds =>
   Array.isArray(v) && v.length === 4 && v.every((n) => Number.isInteger(n) && n > 0)
+const isAscending = (t: readonly number[]) => t.every((n, i) => i === 0 || n > t[i - 1])
+const isAlertSeconds = (v: number) => Number.isInteger(v) && v >= ALERT_SECONDS_MIN && v <= ALERT_SECONDS_MAX
 
 function sound(v: unknown, d: SoundSetting): SoundSetting {
   if (!isObj(v)) return d
@@ -70,8 +78,11 @@ function sound(v: unknown, d: SoundSetting): SoundSetting {
   return d
 }
 
-/** 어떤 입력이든 던지지 않고, 잘못된 필드만 기본값으로 바꾼다. */
-export function normalizeSettings(input: unknown): Settings {
+/**
+ * 어떤 입력이든 던지지 않고, 타입이 틀린 필드만 기본값으로 바꾼다. 범위는 고치지 않는다.
+ * settings:set처럼 범위를 벗어난 값을 validateSettings로 거부해야 하는 곳에서 쓴다.
+ */
+export function coerceSettings(input: unknown): Settings {
   const d = DEFAULT_SETTINGS
   const root = section(input)
   const heatmap = section(root.heatmap)
@@ -110,13 +121,38 @@ export function normalizeSettings(input: unknown): Settings {
   }
 }
 
+/**
+ * 저장된 파일을 읽을 때 쓴다. coerceSettings에 더해 범위를 벗어난 값(오름차순이 아닌 임계값, 10~86400 정수가 아닌 초)도
+ * 기본값으로 고친다. 손으로 고친 settings.json이 짧은 알림 반복이나 설정 창에서 고칠 수 없는 상태를 만들지 않게 한다.
+ * 결과는 소리 파일 존재 여부를 빼면 항상 validateSettings를 통과한다.
+ */
+export function normalizeSettings(input: unknown): Settings {
+  const s = coerceSettings(input)
+  const d = DEFAULT_SETTINGS
+  const { heatmap, alert } = s
+  return {
+    ...s,
+    heatmap: { ...heatmap, fixedThresholds: isAscending(heatmap.fixedThresholds) ? heatmap.fixedThresholds : d.heatmap.fixedThresholds },
+    alert: {
+      ...alert,
+      idleSeconds: isAlertSeconds(alert.idleSeconds) ? alert.idleSeconds : d.alert.idleSeconds,
+      repeatSeconds: isAlertSeconds(alert.repeatSeconds) ? alert.repeatSeconds : d.alert.repeatSeconds,
+    },
+  }
+}
+
+const secondsError = (v: number, min: string, max: string): string | null => {
+  if (!(Number.isInteger(v) && v >= ALERT_SECONDS_MIN)) return min
+  return v > ALERT_SECONDS_MAX ? max : null
+}
+
 /** 소리 파일 존재 여부는 main이 확인한다. */
 export function validateSettings(s: Settings): string[] {
-  const errors: string[] = []
   const t = s.heatmap.fixedThresholds
-  const valid = t.length === 4 && t.every((n, i) => Number.isInteger(n) && n > 0 && (i === 0 || n > t[i - 1]))
-  if (!valid) errors.push(SETTINGS_ERRORS.thresholds)
-  if (!(s.alert.idleSeconds >= 10)) errors.push(SETTINGS_ERRORS.idle)
-  if (!(s.alert.repeatSeconds >= 10)) errors.push(SETTINGS_ERRORS.repeat)
-  return errors
+  const thresholdsOk = t.length === 4 && t.every((n) => Number.isInteger(n) && n > 0) && isAscending(t)
+  return [
+    thresholdsOk ? null : SETTINGS_ERRORS.thresholds,
+    secondsError(s.alert.idleSeconds, SETTINGS_ERRORS.idle, SETTINGS_ERRORS.idleMax),
+    secondsError(s.alert.repeatSeconds, SETTINGS_ERRORS.repeat, SETTINGS_ERRORS.repeatMax),
+  ].filter((e): e is string => e !== null)
 }

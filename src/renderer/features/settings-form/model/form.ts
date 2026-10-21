@@ -24,12 +24,18 @@ export function groupOf(path: SettingsPath): SettingsGroup {
 
 export type GroupErrors = Partial<Record<SettingsGroup, string[]>>
 
-const ERROR_GROUP: Record<string, SettingsGroup> = {
-  [SETTINGS_ERRORS.thresholds]: 'heatmap',
-  [SETTINGS_ERRORS.idle]: 'alert',
-  [SETTINGS_ERRORS.repeat]: 'alert',
-  [SETTINGS_ERRORS.soundFile]: 'alert',
+// 검증 오류 종류마다 묶음을 정한다. SETTINGS_ERRORS에 항목이 늘면 여기서 컴파일 오류가 난다.
+const GROUP_OF_ERROR: Record<keyof typeof SETTINGS_ERRORS, SettingsGroup> = {
+  thresholds: 'heatmap',
+  idle: 'alert',
+  idleMax: 'alert',
+  repeat: 'alert',
+  repeatMax: 'alert',
+  soundFile: 'alert',
 }
+const ERROR_GROUP: Record<string, SettingsGroup> = Object.fromEntries(
+  Object.entries(GROUP_OF_ERROR).map(([key, group]) => [SETTINGS_ERRORS[key as keyof typeof SETTINGS_ERRORS], group]),
+)
 
 /** 오류 문구를 그 필드가 있는 묶음으로 나눈다. 모르는 문구(저장 실패 등)는 바꾼 필드의 묶음에 둔다. */
 export function errorsByGroup(messages: readonly string[], fallback: SettingsGroup): GroupErrors {

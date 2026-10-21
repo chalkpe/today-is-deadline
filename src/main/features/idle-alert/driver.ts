@@ -1,6 +1,14 @@
+import { ALERT_SECONDS_MAX, ALERT_SECONDS_MIN } from '@shared/model/settings'
 import { type AlertEffect, type AlertEvent, type AlertState, reduceAlert } from './reducer'
 
 export type IdleAlert = { dispatch(event: AlertEvent): void; state(): AlertState }
+
+/** 타이머 하한·상한(설정 범위 10~86400초와 같다). 설정이 어떻게 깨져도 짧은 알림 반복이나 영원한 대기가 되지 않게 자른다. */
+export const ALERT_TIMER_MIN_MS = ALERT_SECONDS_MIN * 1000
+export const ALERT_TIMER_MAX_MS = ALERT_SECONDS_MAX * 1000
+
+const clampTimerMs = (ms: number) =>
+  Number.isNaN(ms) ? ALERT_TIMER_MIN_MS : Math.min(Math.max(ms, ALERT_TIMER_MIN_MS), ALERT_TIMER_MAX_MS)
 
 export type IdleAlertDeps = {
   getTimes: () => { idleMs: number; repeatMs: number }
@@ -24,7 +32,7 @@ export function createIdleAlert(deps: IdleAlertDeps): IdleAlert {
     timer = deps.setTimeout(() => {
       timer = undefined
       dispatch(event)
-    }, ms)
+    }, clampTimerMs(ms))
   }
 
   const safe = (fn: () => void) => {

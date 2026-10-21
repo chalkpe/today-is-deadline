@@ -18,6 +18,17 @@ describe('settingsHandlers', () => {
     expect(store.set).toHaveBeenCalledWith(input)
   })
 
+  it('settings:set은 범위를 벗어난 값을 고치지 않고 넘겨 저장소가 거부하게 한다', () => {
+    const store = makeStore()
+    const input = {
+      ...DEFAULT_SETTINGS,
+      heatmap: { ...DEFAULT_SETTINGS.heatmap, fixedThresholds: [1, 3, 2, 4] },
+      alert: { ...DEFAULT_SETTINGS.alert, idleSeconds: 86401, repeatSeconds: 10.5 },
+    }
+    settingsHandlers(store)['settings:set'](input as never)
+    expect(store.set).toHaveBeenCalledWith(input)
+  })
+
   it.each([[null], ['문자열'], [{ alert: '깨짐', heatmap: { fixedThresholds: 'x' } }]])(
     '깨진 입력 %j도 던지지 않고 기본값으로 채워 넘긴다',
     (input) => {

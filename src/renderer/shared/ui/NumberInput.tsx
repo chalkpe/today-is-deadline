@@ -2,13 +2,13 @@ import { cn } from 'cn'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { INPUT } from './TextInput'
 
-type Props = { value: number; onCommit(text: string): void; min?: number; step?: number; className?: string }
+type Props = { value: number; onCommit(text: string): void; min?: number; max?: number; step?: number; className?: string }
 
 /**
  * 키를 누를 때마다가 아니라 브라우저 change(포커스 이탈·Enter·스피너)에서만 onCommit을 부른다.
  * 입력 중인 글자는 따로 들고 있다가 커밋하면 버리고 value를 다시 보여 준다. 그래서 부모가 값을 거부하면 이전 값으로 돌아간다.
  */
-export function NumberInput({ value, onCommit, min, step, className }: Props) {
+export function NumberInput({ value, onCommit, min, max, step, className }: Props) {
   const ref = useRef<HTMLInputElement>(null)
   const [draft, setDraft] = useState<string | null>(null)
 
@@ -30,6 +30,7 @@ export function NumberInput({ value, onCommit, min, step, className }: Props) {
       ref={ref}
       type="number"
       min={min}
+      max={max}
       step={step}
       value={draft ?? String(value)}
       onChange={(event) => setDraft(event.target.value)}

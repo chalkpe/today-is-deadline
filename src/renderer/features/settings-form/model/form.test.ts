@@ -53,6 +53,11 @@ describe('errorsFor', () => {
     expect(errorsFor(base())).toEqual([])
   })
 
+  it('86400초를 넘는 대기 시간·반복 간격은 상한 오류', () => {
+    const s = applyField(applyField(base(), 'alert.idleSeconds', '86401'), 'alert.repeatSeconds', '100000')
+    expect(errorsFor(s)).toEqual([SETTINGS_ERRORS.idleMax, SETTINGS_ERRORS.repeatMax])
+  })
+
   it('validateSettings에 맡긴다(역순 임계값·짧은 대기 시간)', () => {
     const s = applyField(applyField(base(), 'heatmap.fixedThresholds.0', 5000), 'alert.idleSeconds', 5)
     expect(errorsFor(s)).toEqual(validateSettings(s))
@@ -84,5 +89,13 @@ describe('errorsByGroup', () => {
       alert: [idle],
       general: ['알 수 없음'],
     })
+  })
+
+  it('모든 검증 오류는 알려진 묶음으로 간다(상한 오류 포함)', () => {
+    const { idleMax, repeatMax } = SETTINGS_ERRORS
+    expect(errorsByGroup([idleMax, repeatMax], 'heatmap')).toEqual({ alert: [idleMax, repeatMax] })
+    for (const message of Object.values(SETTINGS_ERRORS)) {
+      expect(Object.keys(errorsByGroup([message], 'general'))).not.toEqual(['general'])
+    }
   })
 })
