@@ -1,0 +1,23 @@
+// invoke 채널
+export const CHANNELS = {
+  SETTINGS_GET: 'settings:get',
+  SETTINGS_SET: 'settings:set',
+  HEATMAP_RANGE: 'heatmap:range',
+  DAY_DETAIL: 'day:detail',
+  TODAY: 'stats:today',
+  STATS_DAY: 'stats:day',
+  STATS_WEEK: 'stats:week',
+  STATS_MONTH: 'stats:month',
+  ADJUST_LIST: 'adjust:list',
+  ADJUST_ADD: 'adjust:add',
+  ADJUST_REMOVE: 'adjust:remove',
+  WIDGET_RESIZE: 'widget:resize',
+  WIDGET_OPEN_STATS: 'widget:openStats',
+  WIDGET_OPEN_SETTINGS: 'widget:openSettings',
+  PERMISSION_STATUS: 'permission:status',
+  PERMISSION_REQUEST: 'permission:request',
+  PERMISSION_OPEN_SETTINGS: 'permission:openSettings',
+  SOUND_PICK_FILE: 'sound:pickFile',
+  SOUND_URL: 'sound:url',
+  APP_ICON: 'app:icon',
+} as const
