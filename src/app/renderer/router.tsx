@@ -1,10 +1,14 @@
 import { AdjustPage } from '@renderer/pages/adjust'
 import { SettingsPage } from '@renderer/pages/settings'
+import { StatsPage } from '@renderer/pages/stats'
 import { WidgetPage } from '@renderer/pages/widget'
 import { useEffect, useState } from 'react'
 
 /** '#/stats?date=…' → 'stats' */
 const routeOf = (hash: string) => hash.replace(/^#\/?/, '').split('?')[0]
+
+/** '#/stats?date=2026-10-22' → URLSearchParams('date=2026-10-22') */
+const queryOf = (hash: string) => new URLSearchParams(hash.split('?')[1] ?? '')
 
 /** 모든 창이 같은 문서를 해시 경로로 나눠 쓴다. 이미 열린 창의 경로 이동은 hashchange로 온다. */
 export function Router() {
@@ -17,7 +21,7 @@ export function Router() {
 
   switch (routeOf(hash)) {
     case 'stats':
-      return <p>준비 중</p>
+      return <StatsPage date={queryOf(hash).get('date')} />
     case 'settings':
       return <SettingsPage />
     case 'adjust':

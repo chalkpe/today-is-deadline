@@ -1,7 +1,8 @@
 export type DateKey = string // 'YYYY-MM-DD' 로컬
 export type MonthKey = string // 'YYYY-MM'
 
-const WEEKDAYS_KO = ['월', '화', '수', '목', '금', '토', '일']
+/** 월요일부터의 요일 이름 */
+export const WEEKDAYS_KO = ['월', '화', '수', '목', '금', '토', '일'] as const
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
