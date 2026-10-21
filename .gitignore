@@ -9,3 +9,7 @@ node_modules/
 /.claude/worktrees/
 /.qwen/
 /.venv/
+/out/
+/release/
+/native/target/
+/native/*.node

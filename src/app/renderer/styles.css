@@ -1,0 +1,6 @@
+@import "tailwindcss";
+@import "pretendard/dist/web/static/pretendard.css";
+
+body {
+  font-family: Pretendard, system-ui, sans-serif;
+}
