@@ -4,7 +4,7 @@ import type { IPush } from './push'
 export type ElectronApi = {
   invoke<K extends keyof IEvents>(
     channel: K,
-    ...args: IEvents[K]['args'] extends void ? [] : [IEvents[K]['args']]
+    ...args: IEvents[K]['args'] extends undefined ? [] : [IEvents[K]['args']]
   ): Promise<IEvents[K]['response']>
   on<K extends keyof IPush>(channel: K, listener: (payload: IPush[K]) => void): () => void
 }

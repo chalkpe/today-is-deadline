@@ -21,6 +21,17 @@ describe('createElectronApi', () => {
     expect(fake.invoke).toHaveBeenCalledWith('settings:get')
   })
 
+  it('호출 타입: 인자 없는 채널은 0개, 나머지는 정확히 1개', () => {
+    const api = createElectronApi(makeFake())
+    const never = () => {
+      // @ts-expect-error 인자 없는 채널에 인자를 넘기면 거부된다
+      api.invoke('settings:get', 1)
+      // @ts-expect-error 인자가 필요한 채널은 인자 없이 호출할 수 없다
+      api.invoke('stats:day')
+    }
+    expect(never).toBeTypeOf('function')
+  })
+
   it('리스너는 payload(두 번째 인자)만 받는다', () => {
     const fake = makeFake()
     const listener = vi.fn()
