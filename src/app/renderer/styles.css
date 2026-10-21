@@ -4,6 +4,12 @@
 /* renderer 빌드 루트(src/app/renderer) 밖의 FSD 레이어도 클래스를 찾게 한다 */
 @source "../../renderer";
 
+/* 위젯은 투명 창이라 문서 배경을 비워 둔다. 패널과 다른 창의 배경은 각 페이지가 칠한다. */
+html,
+body {
+  background: transparent;
+}
+
 body {
   font-family: Pretendard, system-ui, sans-serif;
 }

@@ -3,10 +3,12 @@ export const CELL = 10
 export const GAP = 2
 export const PITCH = 12
 export const PANEL_PADDING = 10
+export const PANEL_BORDER = 1 // PANEL_PADDING 안에 포함된다
 export const DOW_LABEL_WIDTH = 16
 export const MONTH_LABEL_HEIGHT = 14
 export const FOOTER_HEIGHT = 22
 export const MIN_WEEKS = 8
+export const MAX_WEEKS = 57 // heatmap:range 400일 상한 안: 오늘이 일요일이어도 57주 = 399일
 export const DETAIL_HEADER_HEIGHT = 34
 export const DETAIL_ROW_HEIGHT = 18
 
