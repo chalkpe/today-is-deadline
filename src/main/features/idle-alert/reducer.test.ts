@@ -24,6 +24,9 @@ describe('reduceAlert 표', () => {
   it('suspended + resume', () => {
     expect(reduceAlert('suspended', 'resume')).toEqual({ state: 'active', effects: ['startIdleTimer'] })
   })
+  it('suspended + keydown은 resume처럼 다시 건다(resume·잠금 해제를 놓쳐도 입력이 오면 깨어 있다)', () => {
+    expect(reduceAlert('suspended', 'keydown')).toEqual({ state: 'active', effects: ['startIdleTimer'] })
+  })
   it('비활성 외 상태 + disable', () => {
     for (const s of ['active', 'alerting', 'suspended'] as AlertState[]) {
       expect(reduceAlert(s, 'disable')).toEqual({ state: 'disabled', effects: ['stopSound', 'cancelTimers'] })
@@ -33,7 +36,6 @@ describe('reduceAlert 표', () => {
 
 describe('reduceAlert 표 밖 조합', () => {
   const noop: [AlertState, AlertEvent][] = [
-    ['suspended', 'keydown'],
     ['disabled', 'keydown'],
     ['disabled', 'suspend'],
     ['disabled', 'disable'],

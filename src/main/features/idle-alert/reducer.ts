@@ -13,7 +13,8 @@ export function reduceAlert(state: AlertState, event: AlertEvent): AlertTransiti
     return { state: 'suspended', effects: ['stopSound', 'cancelTimers'] }
   }
   if (event === 'enable' && state === 'disabled') return { state: 'active', effects: ['startIdleTimer'] }
-  if (event === 'resume' && state === 'suspended') return { state: 'active', effects: ['startIdleTimer'] }
+  // 키 입력이 왔다면 깨어 있다는 뜻이므로 resume·잠금 해제 신호를 놓쳤어도 suspended에 갇히지 않게 resume처럼 다룬다
+  if ((event === 'resume' || event === 'keydown') && state === 'suspended') return { state: 'active', effects: ['startIdleTimer'] }
   if (event === 'keydown' && state === 'active') return { state: 'active', effects: ['startIdleTimer'] }
   if (event === 'keydown' && state === 'alerting') return { state: 'active', effects: ['stopSound', 'startIdleTimer'] }
   if (event === 'idleElapsed' && state === 'active') return { state: 'alerting', effects: ['playSound', 'startRepeatTimer'] }

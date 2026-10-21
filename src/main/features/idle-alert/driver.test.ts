@@ -60,13 +60,25 @@ describe('createIdleAlert', () => {
     alert.dispatch('suspend')
     expect(stop).toHaveBeenCalledTimes(1)
     expect(vi.getTimerCount()).toBe(0)
-    alert.dispatch('keydown')
-    expect(alert.state()).toBe('suspended')
     alert.dispatch('resume')
     expect(alert.state()).toBe('active')
     expect(vi.getTimerCount()).toBe(1)
     vi.advanceTimersByTime(300_000)
     expect(play).toHaveBeenCalledTimes(2)
+  })
+
+  it('suspended 중 keydown은 유휴 타이머를 다시 건다(resume를 놓친 경우의 자가 복구)', () => {
+    const { alert, play } = make()
+    alert.dispatch('enable')
+    alert.dispatch('suspend')
+    expect(vi.getTimerCount()).toBe(0)
+    alert.dispatch('keydown')
+    expect(alert.state()).toBe('active')
+    expect(vi.getTimerCount()).toBe(1)
+    vi.advanceTimersByTime(300_000)
+    expect(play).toHaveBeenCalledTimes(1)
+    alert.dispatch('resume') // 늦게 온 resume는 무시된다
+    expect(alert.state()).toBe('alerting')
   })
 
   it('타이머 시각에 현재 getTimes 값을 쓴다', () => {
