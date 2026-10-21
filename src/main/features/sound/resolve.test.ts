@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import type { SoundSetting } from '@shared/model/settings'
 import { describe, expect, it } from 'vitest'
 import { resolveSoundPath, soundUrlFor } from './resolve'
@@ -14,7 +15,7 @@ describe('soundUrlFor', () => {
 
 describe('resolveSoundPath', () => {
   it('builtin 이름을 mp3 경로로', () => {
-    expect(resolveSoundPath('sound://builtin/rooster', builtin, '/s')).toBe('/s/rooster.mp3')
+    expect(resolveSoundPath('sound://builtin/rooster', builtin, '/s')).toBe(join('/s', 'rooster.mp3'))
   })
   it('file 설정이면 그 경로', () => {
     expect(resolveSoundPath('sound://file', file, '/s')).toBe('/tmp/my.mp3')
