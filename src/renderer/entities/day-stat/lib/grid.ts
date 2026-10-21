@@ -1,6 +1,6 @@
 import { addDays, type DateKey, mondayOf } from '@shared/model/calendar'
 import { type IntensityContext, intensityFor } from '@shared/model/intensity'
-import type { DayTotal } from '@shared/model/stats'
+import { type DayDetail, type DayTotal, foldApps } from '@shared/model/stats'
 
 export type GridCell = { date: DateKey; total: number; intensity: number; future: boolean; isToday: boolean }
 export type GridColumn = { monday: DateKey; cells: GridCell[] } // 항상 7개
@@ -39,4 +39,10 @@ export function monthLabels(columns: GridColumn[]): { column: number; label: str
     if (index === 0 || month !== columns[index - 1].monday.slice(5, 7)) labels.push({ column: index, label: `${Number(month)}월` })
   })
   return labels
+}
+
+/** 상세 패널의 앱 행 수(접힌 '기타' 행 포함). widgetHeight의 detailRows에 넘긴다. */
+export function detailRowCount(detail: DayDetail): number {
+  const { shown, others } = foldApps(detail.apps, 5)
+  return shown.length + (others ? 1 : 0)
 }

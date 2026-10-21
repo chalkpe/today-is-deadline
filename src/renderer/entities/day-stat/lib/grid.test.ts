@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildGrid, monthLabels, relativeMax } from './grid'
+import { buildGrid, detailRowCount, monthLabels, relativeMax } from './grid'
 
 // 2026-10-22는 목요일
 const TODAY = '2026-10-22'
@@ -55,5 +55,15 @@ describe('monthLabels', () => {
   it('같은 달이면 열 0만', () => {
     const columns = buildGrid([], { start: '2026-10-05', end: '2026-10-18' }, '2026-10-18', { mode: 'relative', max: 0 })
     expect(monthLabels(columns)).toEqual([{ column: 0, label: '10월' }])
+  })
+})
+
+describe('detailRowCount', () => {
+  const app = (i: number) => ({ appId: `a${i}`, name: `a${i}`, count: 1, ratio: 0.1 })
+  const detail = (n: number) => ({ date: TODAY, total: n, adjustment: 0, apps: Array.from({ length: n }, (_, i) => app(i)) })
+  it('5개 이하는 그대로, 초과하면 기타 한 줄 추가', () => {
+    expect(detailRowCount(detail(0))).toBe(0)
+    expect(detailRowCount(detail(5))).toBe(5)
+    expect(detailRowCount(detail(8))).toBe(6)
   })
 })

@@ -1,7 +1,7 @@
 import { type GridColumn, monthLabels } from '@renderer/entities/day-stat'
 import { cellColor } from '@renderer/shared/lib/color'
 import type { DateKey } from '@shared/model/calendar'
-import { CELL, DOW_LABEL_WIDTH, GAP, MONTH_LABEL_HEIGHT } from '@shared/model/layout'
+import { CELL, DOW_LABEL_WIDTH, GAP, MONTH_LABEL_HEIGHT, PITCH } from '@shared/model/layout'
 import { cn } from 'cn'
 
 type Props = {
@@ -24,7 +24,7 @@ export function HeatmapGrid({ columns, baseColor, showDayLabels, showMonthLabels
       {showMonthLabels && (
         <div className="relative" style={{ height: MONTH_LABEL_HEIGHT }}>
           {labels.map(({ column, label }) => (
-            <span key={column} className="absolute top-0" style={{ left: offset + column * (CELL + GAP) }}>
+            <span key={column} className="absolute top-0" style={{ left: offset + column * PITCH }}>
               {label}
             </span>
           ))}

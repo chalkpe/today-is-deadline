@@ -9,10 +9,10 @@ export function DayDetail({ detail, showIcons }: Props) {
   const { shown, others } = foldApps(detail.apps, 5)
   return (
     <div className="text-[11px] text-neutral-200">
-      <div className="flex flex-col justify-center" style={{ height: DETAIL_HEADER_HEIGHT }}>
-        <div className="font-semibold">{`${formatDateKo(detail.date)} · ${formatCount(detail.total)}타`}</div>
+      <div className="flex items-center justify-between gap-2" style={{ height: DETAIL_HEADER_HEIGHT }}>
+        <div className="min-w-0 truncate font-semibold">{`${formatDateKo(detail.date)} · ${formatCount(detail.total)}타`}</div>
         {detail.adjustment !== 0 && (
-          <div className="text-[10px] text-neutral-400">{`조정 ${detail.adjustment >= 0 ? '+' : ''}${formatCount(detail.adjustment)}`}</div>
+          <div className="shrink-0 text-[10px] text-neutral-400">{`조정 ${detail.adjustment >= 0 ? '+' : ''}${formatCount(detail.adjustment)}`}</div>
         )}
       </div>
       {shown.map((app) => (
