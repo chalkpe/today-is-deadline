@@ -1,9 +1,8 @@
 import type { Handlers } from '@main/shared/ipc'
 import { CHANNELS } from '@shared/ipc'
 import { BrowserWindow, dialog, type OpenDialogOptions } from 'electron'
+import { AUDIO_EXTENSIONS } from './content-type'
 import { soundUrlFor } from './resolve'
-
-export const AUDIO_EXTENSIONS = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac']
 
 export function soundHandlers() {
   return {

@@ -5,16 +5,19 @@ import type { NativeHook } from '@main/shared/native'
 import { type PermissionStatus, PUSH } from '@shared/ipc'
 import type { Settings } from '@shared/model/settings'
 import { powerMonitor } from 'electron'
+import { fileIconPng } from './app-icon'
 import { createCounter } from './counter'
-import { fileIconPng } from './icon'
+import { flushWhileTyping } from './live'
 import { createCountingSession } from './session'
 
+export { fileIconPng } from './app-icon'
 export { type Counter, createCounter } from './counter'
-export { fileIconPng } from './icon'
+export { firstIconPng, type IconStrategy, iconStrategies } from './icon'
 export { countingHandlers, INPUT_MONITORING_URL } from './ipc'
+export { flushWhileTyping, LIVE_FLUSH_MS } from './live'
 export { type CountingSession, createCountingSession } from './session'
 
-/** 스펙 6.2: 5초마다 flush */
+/** 스펙 6.2: 5초마다 flush(타자 중에는 flushWhileTyping이 1초마다 flush하므로 안전망 역할) */
 export const FLUSH_INTERVAL_MS = 5000
 
 type Deps = {
@@ -38,7 +41,7 @@ export type Counting = {
   stop(): void
 }
 
-/** 카운터와 권한 세션을 만들고 설정 변경(카운트 On/Off)·절전 진입·권한 변화에 반응하게 연결한다. */
+/** 카운터와 권한 세션을 만들고 설정 변경(카운트 On/Off)·절전 진입·권한 변화·타자 중 flush를 연결한다. */
 export function createCounting({ hook, db, settings, log, send }: Deps): Counting {
   const runningListeners = new Set<(running: boolean) => void>()
   const counter = createCounter({
@@ -69,6 +72,8 @@ export function createCounting({ hook, db, settings, log, send }: Deps): Countin
   })
   settings.onChange(() => session.sync())
   powerMonitor.on('suspend', () => counter.flush())
+  // 타자 중 1초마다 flush → onTodayChanged → 오늘 통계 푸시(스펙 8.5)
+  const stopLiveFlush = flushWhileTyping(counter)
 
   return {
     sync: session.sync,
@@ -84,6 +89,7 @@ export function createCounting({ hook, db, settings, log, send }: Deps): Countin
       }
     },
     stop() {
+      stopLiveFlush()
       session.dispose()
       counter.stop()
     },
