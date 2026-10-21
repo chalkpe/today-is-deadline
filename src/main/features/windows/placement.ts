@@ -1,4 +1,4 @@
-import { widgetHeight } from '@shared/model/layout'
+import { panelHeight } from '@shared/model/layout'
 import type { Settings } from '@shared/model/settings'
 import { clampToDisplays, type Rect } from './bounds'
 
@@ -6,15 +6,16 @@ import { clampToDisplays, type Rect } from './bounds'
 export const WIDGET_MARGIN = 24
 
 /**
- * 위젯 창의 첫 경계. 너비는 설정, 높이는 펼침 없는 widgetHeight.
+ * 위젯 창의 첫 경계. 너비는 설정, 높이는 펼침 없는 panelHeight(시작할 때 권한이 거부돼 있으면 권한 안내 높이).
  * 위치는 저장된 값(없으면 주 디스플레이 오른쪽 위)을 clampToDisplays로 화면 안에 맞춘다.
  */
-export function widgetBounds(settings: Settings, displays: Rect[], primary: Rect): Rect {
+export function widgetBounds(settings: Settings, displays: Rect[], primary: Rect, denied = false): Rect {
   const width = Math.round(settings.widget.width)
-  const height = widgetHeight({
+  const height = panelHeight({
     showMonthLabels: settings.heatmap.showMonthLabels,
     showTodayCount: settings.heatmap.showTodayCount,
     detailRows: 0,
+    denied,
   })
   const { x, y } = settings.widget
   const wanted =

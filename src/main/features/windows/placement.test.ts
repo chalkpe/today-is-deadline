@@ -1,3 +1,4 @@
+import { PERMISSION_NOTICE_HEIGHT } from '@shared/model/layout'
 import { DEFAULT_SETTINGS, type Settings } from '@shared/model/settings'
 import { describe, expect, it } from 'vitest'
 import { widgetBounds } from './placement'
@@ -33,5 +34,18 @@ describe('widgetBounds', () => {
   it('월 라벨·오늘 타수를 끄면 그만큼 낮아지고, 소수 좌표는 반올림한다', () => {
     const bounds = widgetBounds(withWidget({ x: 100.4, y: 200.6 }, { showMonthLabels: false, showTodayCount: false }), [primary], primary)
     expect(bounds).toEqual({ x: 100, y: 201, width: 320, height: 102 })
+  })
+
+  it('시작할 때 권한이 거부돼 있으면 권한 안내 높이로 띄운다', () => {
+    expect(widgetBounds(withWidget({ x: 100, y: 200 }), [primary], primary, true)).toEqual({
+      x: 100,
+      y: 200,
+      width: 320,
+      height: PERMISSION_NOTICE_HEIGHT,
+    })
+  })
+
+  it('화면 아래에 저장된 위치도 권한 안내 높이 전체가 작업 영역 안에 들어오게 올린다', () => {
+    expect(widgetBounds(withWidget({ x: 100, y: 850 }), [primary], primary, true)).toMatchObject({ y: 900 - PERMISSION_NOTICE_HEIGHT })
   })
 })

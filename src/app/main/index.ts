@@ -34,7 +34,13 @@ function start(): void {
   const counting = createCounting({ hook: loadNativeHook(nativeDir), db, settings, log, send: broadcast })
   app.dock?.hide()
   createTray({ iconsDir: join(resources, 'icons'), settings, counting, open: (kind) => windows.openSecondary(kind) })
-  const windows = createWindows({ settings, preload: join(import.meta.dirname, '../preload/index.cjs'), source: rendererSource(), log })
+  const windows = createWindows({
+    settings,
+    preload: join(import.meta.dirname, '../preload/index.cjs'),
+    source: rendererSource(),
+    log,
+    permissionDenied: counting.status() === 'denied',
+  })
   const today = createTodayPusher({ db, now, send: broadcast, log })
   const alert = startIdleAlert({ settings, counting, soundUrl: soundUrlFor, send: broadcast, log })
   publishSettings(settings, broadcast)

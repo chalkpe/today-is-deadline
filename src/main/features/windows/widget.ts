@@ -3,7 +3,13 @@ import { BrowserWindow, screen } from 'electron'
 import { loadRoute, type RendererSource, webPreferences } from './page'
 import { widgetBounds } from './placement'
 
-type Options = { preload: string; source: RendererSource; onLoadError: (err: unknown) => void }
+type Options = {
+  preload: string
+  source: RendererSource
+  onLoadError: (err: unknown) => void
+  /** 시작할 때 권한이 거부돼 있으면 첫 높이를 권한 안내 높이로 잡는다 */
+  permissionDenied: boolean
+}
 
 /**
  * 항상 위에 뜨는 투명·프레임 없는 위젯 창(#/widget).
@@ -12,7 +18,7 @@ type Options = { preload: string; source: RendererSource; onLoadError: (err: unk
 export function createWidgetWindow(settings: Settings, options: Options, onReady: (win: BrowserWindow) => void): BrowserWindow {
   const displays = screen.getAllDisplays().map((d) => d.workArea)
   const win = new BrowserWindow({
-    ...widgetBounds(settings, displays, screen.getPrimaryDisplay().workArea),
+    ...widgetBounds(settings, displays, screen.getPrimaryDisplay().workArea, options.permissionDenied),
     show: false,
     frame: false,
     transparent: true,

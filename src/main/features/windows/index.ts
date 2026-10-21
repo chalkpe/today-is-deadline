@@ -21,6 +21,8 @@ type Deps = {
   preload: string
   source: RendererSource
   log: Pick<Logger, 'error'>
+  /** 시작할 때의 권한 거부 여부. 위젯 창의 첫 높이를 정한다. */
+  permissionDenied: boolean
 }
 
 export type Windows = {
@@ -32,12 +34,12 @@ export type Windows = {
 }
 
 /** 위젯 창을 만들고, 설정(잠금·표시 여부)과 창 상태(위치·너비)를 서로 맞춘다. */
-export function createWindows({ settings, preload, source, log }: Deps): Windows {
+export function createWindows({ settings, preload, source, log, permissionDenied }: Deps): Windows {
   let quitting = false
   const onLoadError = (err: unknown) => log.error('window: load failed', err)
   const setVisible = (visible: boolean) => settings.update((s) => ({ ...s, widget: { ...s.widget, visible } }))
 
-  const widget = createWidgetWindow(settings.get(), { preload, source, onLoadError }, (win) => {
+  const widget = createWidgetWindow(settings.get(), { preload, source, onLoadError, permissionDenied }, (win) => {
     if (settings.get().widget.visible) win.showInactive()
   })
   const secondary = createSecondaryWindows({ settings, preload, source, onLoadError })

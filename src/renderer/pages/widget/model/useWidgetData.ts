@@ -3,7 +3,7 @@ import { api, usePush } from '@renderer/shared/lib/ipc'
 import type { PermissionStatus } from '@shared/ipc/events'
 import { type DateKey, heatmapRange, msUntilNextMidnight, toDateKey, visibleWeeks } from '@shared/model/calendar'
 import type { IntensityContext } from '@shared/model/intensity'
-import { DOW_LABEL_WIDTH, MAX_WEEKS, MIN_WEEKS, PANEL_PADDING, PITCH, widgetHeight } from '@shared/model/layout'
+import { DOW_LABEL_WIDTH, MAX_WEEKS, MIN_WEEKS, PANEL_PADDING, PITCH, panelHeight } from '@shared/model/layout'
 import type { Settings } from '@shared/model/settings'
 import type { DayDetail, DayTotal, TodayStats } from '@shared/model/stats'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -54,7 +54,7 @@ export type WidgetData = {
   select(date: DateKey | null): void
   /** 펼친 하루 내역. 선택이 없거나 권한 안내 중이면 null */
   detail: DayDetail | null
-  /** 지금 그리는 내용의 창 높이(widgetHeight). main에 같은 값을 보낸다. */
+  /** 지금 그리는 내용의 창 높이(panelHeight: 권한 안내 중이면 PERMISSION_NOTICE_HEIGHT). main에 같은 값을 보낸다. */
   height: number
 }
 
@@ -147,7 +147,8 @@ export function useWidgetData(): WidgetData | null {
   const shownDetail = selected === null || denied ? null : detail
   const height =
     settings &&
-    widgetHeight({
+    panelHeight({
+      denied,
       showMonthLabels: settings.heatmap.showMonthLabels,
       showTodayCount: settings.heatmap.showTodayCount,
       // 앱 기록이 없는 날도 '기록 없음' 한 줄을 그린다
