@@ -1,0 +1,38 @@
+# 서명·공증은 하지 않는다. 로컬과 CI 모두 CSC_IDENTITY_AUTO_DISCOVERY=false로 키체인 인증서 자동 탐색을 끈다.
+appId: com.chalkpe.today-is-deadline
+productName: today-is-deadline
+directories:
+  output: release
+# renderer 의존성(react·pretendard 등)은 out/renderer에 번들되고 main은 외부 패키지를 쓰지 않으므로 node_modules는 넣지 않는다.
+files:
+  - out/**
+  - package.json
+  - '!node_modules/**'
+asar: true
+# 런타임은 process.resourcesPath 아래 sounds·icons·native를 찾는다(src/app/main/index.ts, src/main/shared/native).
+extraResources:
+  - from: resources/sounds
+    to: sounds
+  - from: resources/icons
+    to: icons
+  - from: native
+    to: native
+    filter:
+      - index.js
+      - '*.node'
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  icon: resources/icons/icon.icns
+  category: public.app-category.productivity
+  extendInfo:
+    LSUIElement: true
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: resources/icons/icon.ico
+nsis:
+  oneClick: false
+  perMachine: false

@@ -1,0 +1,58 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      # 서명하지 않는다. 키체인 인증서 자동 탐색을 끈다.
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      # Windows 러너는 core.autocrlf=true라 CRLF로 체크아웃되고, 그러면 Biome 포맷 검사가 실패한다.
+      - run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'x86_64-apple-darwin' || '' }}
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm native:build
+
+      # 러너는 arm64라서 x64 앱에 넣을 애드온을 따로 만든다.
+      - if: runner.os == 'macOS'
+        run: pnpm native:build --target x86_64-apple-darwin
+
+      - run: pnpm native:test
+      - run: pnpm check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+      - if: runner.os == 'macOS'
+        run: pnpm exec electron-builder --mac --arm64 --x64 --publish never
+
+      - if: runner.os == 'Windows'
+        run: pnpm exec electron-builder --win --x64 --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: today-is-deadline-${{ runner.os }}
+          path: |
+            release/*.dmg
+            release/*.exe
+          if-no-files-found: error
