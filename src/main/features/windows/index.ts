@@ -3,7 +3,7 @@ import { debounce } from '@main/shared/timing'
 import type { Settings } from '@shared/model/settings'
 import { app, screen } from 'electron'
 import type { RendererSource, SecondaryKind } from './page'
-import { resizeTarget } from './resize'
+import { placeResized, resizeTarget } from './resize'
 import { createSecondaryWindows } from './secondary'
 import { applyLock, createWidgetWindow } from './widget'
 
@@ -78,10 +78,18 @@ export function createWindows({ settings, preload, source, log }: Deps): Windows
     resizeWidget(request) {
       if (widget.isDestroyed()) return
       const [width, height] = widget.getSize()
-      const area = screen.getDisplayMatching(widget.getBounds()).workArea
+      const bounds = widget.getBounds()
+      const area = screen.getDisplayMatching(bounds).workArea
       const next = resizeTarget({ width, height }, request, settings.get().widget.locked, area)
       if (!next) return
-      widget.setSize(next.width, next.height)
+      // 화면 아래쪽에서 펼치면 아래 끝이 작업 영역을 넘지 않게 창을 올린다
+      const placed = placeResized(bounds, next.height, area)
+      if (placed.y !== bounds.y) {
+        widget.setBounds({ x: placed.x, y: placed.y, width: next.width, height: next.height })
+        savePosition.call()
+      } else {
+        widget.setSize(next.width, next.height)
+      }
       if (next.width !== width) saveWidth.call()
     },
     openSecondary: secondary.open,
