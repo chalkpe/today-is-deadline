@@ -1,9 +1,11 @@
 import { powerMonitor } from 'electron'
+import { createPauseTracker } from './pause'
 
-/** 절전·화면 잠금은 suspend, 복귀·잠금 해제는 resume으로 묶어 알린다. */
+/** 절전·화면 잠금 중 하나라도 걸리면 suspend, 둘 다 풀리면 resume으로 알린다. */
 export function watchPower(handlers: { suspend(): void; resume(): void }): void {
-  powerMonitor.on('suspend', () => handlers.suspend())
-  powerMonitor.on('lock-screen', () => handlers.suspend())
-  powerMonitor.on('resume', () => handlers.resume())
-  powerMonitor.on('unlock-screen', () => handlers.resume())
+  const signal = createPauseTracker(handlers)
+  powerMonitor.on('suspend', () => signal('suspend'))
+  powerMonitor.on('lock-screen', () => signal('lock-screen'))
+  powerMonitor.on('resume', () => signal('resume'))
+  powerMonitor.on('unlock-screen', () => signal('unlock-screen'))
 }
