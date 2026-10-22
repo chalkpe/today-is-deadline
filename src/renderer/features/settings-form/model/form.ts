@@ -14,6 +14,7 @@ export type SettingsPath =
   | 'alert.repeatSeconds'
   | 'alert.sound'
   | 'general.openAtLogin'
+  | 'general.appearance'
 
 /** 설정 창의 묶음(히트맵·알림·일반). 오류는 바꾼 필드의 묶음 아래에 보여 준다. */
 export type SettingsGroup = SettingsPath extends `${infer G}.${string}` ? G : never

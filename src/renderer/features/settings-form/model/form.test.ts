@@ -46,6 +46,15 @@ describe('applyField', () => {
     expect(applyField(s, 'general.openAtLogin', true).general.openAtLogin).toBe(true)
     expect(s).toEqual(DEFAULT_SETTINGS)
   })
+
+  it('외관을 불변 갱신한다', () => {
+    const s = base()
+    const next = applyField(s, 'general.appearance', 'light')
+    expect(next.general).toEqual({ ...s.general, appearance: 'light' })
+    expect(s.general.appearance).toBe('system')
+    expect(next.general).not.toBe(s.general)
+    expect(next.heatmap).toBe(s.heatmap)
+  })
 })
 
 describe('errorsFor', () => {
@@ -77,6 +86,7 @@ describe('groupOf', () => {
     expect(groupOf('heatmap.fixedThresholds.3')).toBe('heatmap')
     expect(groupOf('alert.sound')).toBe('alert')
     expect(groupOf('general.openAtLogin')).toBe('general')
+    expect(groupOf('general.appearance')).toBe('general')
   })
 })
 
