@@ -1,6 +1,6 @@
 {
   "name": "today-is-deadline",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "타이핑 카운터 위젯",
   "type": "module",
   "main": "./out/main/index.js",
