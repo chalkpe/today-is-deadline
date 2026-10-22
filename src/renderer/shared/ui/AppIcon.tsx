@@ -4,10 +4,17 @@ import { api } from '../lib/ipc'
 
 const cache = new Map<string, Promise<string | null>>()
 
+/** 얻은 아이콘만 창이 살아 있는 동안 기억한다. 첫 키다운 뒤 아이콘 저장이 끝나기 전에 물으면 null이므로, null·실패는 다음 마운트 때 다시 묻는다. */
 function loadIcon(appId: string): Promise<string | null> {
   let hit = cache.get(appId)
   if (!hit) {
-    hit = api.invoke('app:icon', appId).catch(() => null)
+    hit = api
+      .invoke('app:icon', appId)
+      .catch(() => null)
+      .then((url) => {
+        if (url === null) cache.delete(appId)
+        return url
+      })
     cache.set(appId, hit)
   }
   return hit

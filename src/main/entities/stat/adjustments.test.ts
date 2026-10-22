@@ -7,6 +7,7 @@ describe('adjustments 검증', () => {
     const db = openDb(':memory:')
     expect(() => addAdjustment(db, { date: '2026-10-20', delta: 0, memo: '' }, 't')).toThrow('0이 아닌 정수')
     expect(() => addAdjustment(db, { date: '2026-10-20', delta: 1.5, memo: '' }, 't')).toThrow('0이 아닌 정수')
+    expect(() => addAdjustment(db, { date: '2026-10-20', delta: 1e300, memo: '' }, 't')).toThrow('0이 아닌 정수')
     expect(listAdjustments(db)).toEqual([])
   })
   it('DB도 delta 0을 막고 memo 기본값은 빈 문자열', () => {

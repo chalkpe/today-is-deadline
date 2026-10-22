@@ -58,7 +58,7 @@ export type WidgetData = {
   height: number
 }
 
-/** 위젯 화면의 데이터·선택·창 높이. 설정을 받기 전에는 null. */
+/** 위젯 화면의 데이터·선택·창 높이. 설정과 권한 상태를 받기 전에는 null. */
 export function useWidgetData(): WidgetData | null {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [permission, setPermission] = useState<PermissionStatus | null>(null)
@@ -127,10 +127,8 @@ export function useWidgetData(): WidgetData | null {
     if (selected !== null && selected < range.start) setSelected(null)
   }, [selected, range.start])
 
-  usePush('push:settings', (next) => {
-    setSettings(next)
-    fetchTotals()
-  })
+  // 날짜별 합계는 설정과 무관하다. 보이는 범위가 바뀌는 설정(요일 라벨)은 위의 범위 effect가 다시 조회한다.
+  usePush('push:settings', setSettings)
   usePush('push:permission', setPermission)
   usePush('push:today', (next) => {
     setToday(next)
@@ -145,15 +143,17 @@ export function useWidgetData(): WidgetData | null {
 
   const denied = permission === 'denied'
   const shownDetail = selected === null || denied ? null : detail
+  // 권한 상태를 받기 전에 높이를 정하면 거부 상태로 시작할 때 히트맵 높이로 줄었다가 안내 높이로 다시 늘어난다
   const height =
-    settings &&
-    panelHeight({
-      denied,
-      showMonthLabels: settings.heatmap.showMonthLabels,
-      showTodayCount: settings.heatmap.showTodayCount,
-      // 앱 기록이 없는 날도 '기록 없음' 한 줄을 그린다
-      detailRows: shownDetail ? Math.max(1, detailRowCount(shownDetail)) : 0,
-    })
+    settings && permission !== null
+      ? panelHeight({
+          denied,
+          showMonthLabels: settings.heatmap.showMonthLabels,
+          showTodayCount: settings.heatmap.showTodayCount,
+          // 앱 기록이 없는 날도 '기록 없음' 한 줄을 그린다
+          detailRows: shownDetail ? Math.max(1, detailRowCount(shownDetail)) : 0,
+        })
+      : null
 
   useEffect(() => {
     if (height !== null) api.invoke('widget:resize', { height })

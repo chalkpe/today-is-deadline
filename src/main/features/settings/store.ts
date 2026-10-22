@@ -1,6 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { DEFAULT_SETTINGS, normalizeSettings, SETTINGS_ERRORS, type Settings, validateSettings } from '@shared/model/settings'
+import {
+  DEFAULT_SETTINGS,
+  normalizeSettings,
+  SETTINGS_ERRORS,
+  type Settings,
+  type SoundSetting,
+  validateSettings,
+} from '@shared/model/settings'
 
 export type SettingsStore = {
   get(): Settings
@@ -17,6 +24,8 @@ export function createSettingsStore({ filePath, fileExists }: Deps): SettingsSto
   const listeners = new Set<(next: Settings, prev: Settings) => void>()
 
   const hasMissingSound = (s: Settings) => s.alert.sound.kind === 'file' && !fileExists(s.alert.sound.path)
+  const sameSound = (a: SoundSetting, b: SoundSetting) =>
+    a.kind === 'builtin' ? b.kind === 'builtin' && a.name === b.name : b.kind === 'file' && a.path === b.path
 
   const write = (value: Settings) => {
     fs.mkdirSync(path.dirname(filePath), { recursive: true })
@@ -36,7 +45,11 @@ export function createSettingsStore({ filePath, fileExists }: Deps): SettingsSto
     const loaded = structuredClone(normalizeSettings(raw))
     if (!hasMissingSound(loaded)) return loaded
     const fixed: Settings = { ...loaded, alert: { ...loaded.alert, sound: structuredClone(DEFAULT_SETTINGS.alert.sound) } }
-    write(fixed)
+    try {
+      write(fixed)
+    } catch {
+      // 고친 값을 저장하지 못해도 시작은 막지 않는다. 이번 실행은 고친 값으로 돌고 다음 저장 때 다시 쓴다.
+    }
     return fixed
   }
 
@@ -59,7 +72,8 @@ export function createSettingsStore({ filePath, fileExists }: Deps): SettingsSto
     get: () => current,
     set(next) {
       const errors = validateSettings(next)
-      if (hasMissingSound(next)) errors.push(SETTINGS_ERRORS.soundFile)
+      // 소리를 바꿀 때만 파일을 확인한다. 저장된 파일이 그사이 지워졌어도 잠금 토글·외관 같은 다른 저장은 막지 않는다.
+      if (!sameSound(next.alert.sound, current.alert.sound) && hasMissingSound(next)) errors.push(SETTINGS_ERRORS.soundFile)
       if (errors.length > 0) return errors
       commit(next)
       return []

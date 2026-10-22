@@ -61,11 +61,12 @@ type Obj = Record<string, unknown>
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v)
 const section = (v: unknown): Obj => (isObj(v) ? v : {})
 const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d)
-const str = (v: unknown, d: string) => (typeof v === 'string' ? v : d)
 const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d)
 const nullableNum = (v: unknown, d: number | null) =>
   v === null || (typeof v === 'number' && Number.isFinite(v)) ? (v as number | null) : d
 
+/** 색 입력(<input type="color">)이 다루는 '#rrggbb'. 다른 문자열은 색 계산(culori)에서 예외가 나므로 타입이 틀린 값으로 본다. */
+const isHexColor = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)
 const isThresholds = (v: unknown): v is FixedThresholds =>
   Array.isArray(v) && v.length === 4 && v.every((n) => Number.isInteger(n) && n > 0)
 const isAscending = (t: readonly number[]) => t.every((n, i) => i === 0 || n > t[i - 1])
@@ -94,7 +95,7 @@ export function coerceSettings(input: unknown): Settings {
   return {
     counting: { enabled: bool(section(root.counting).enabled, d.counting.enabled) },
     heatmap: {
-      baseColor: str(heatmap.baseColor, d.heatmap.baseColor),
+      baseColor: isHexColor(heatmap.baseColor) ? heatmap.baseColor : d.heatmap.baseColor,
       mode: heatmap.mode === 'relative' || heatmap.mode === 'fixed' ? heatmap.mode : d.heatmap.mode,
       fixedThresholds: isThresholds(heatmap.fixedThresholds)
         ? ([...heatmap.fixedThresholds] as unknown as FixedThresholds)

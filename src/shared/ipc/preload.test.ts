@@ -35,17 +35,17 @@ describe('createElectronApi', () => {
   it('리스너는 payload(두 번째 인자)만 받는다', () => {
     const fake = makeFake()
     const listener = vi.fn()
-    createElectronApi(fake).on('push:counting', listener)
+    createElectronApi(fake).on('push:permission', listener)
     const wrapper = fake.on.mock.calls[0][1] as (e: unknown, p: unknown) => void
-    wrapper({ sender: 1 }, true)
-    expect(listener).toHaveBeenCalledWith(true)
+    wrapper({ sender: 1 }, 'granted')
+    expect(listener).toHaveBeenCalledWith('granted')
     expect(listener.mock.calls[0]).toHaveLength(1)
   })
 
   it('해제 함수는 등록한 래퍼와 같은 참조로 removeListener를 호출한다', () => {
     const fake = makeFake()
-    const off = createElectronApi(fake).on('push:counting', vi.fn())
+    const off = createElectronApi(fake).on('push:permission', vi.fn())
     off()
-    expect(fake.removeListener).toHaveBeenCalledWith('push:counting', fake.on.mock.calls[0][1])
+    expect(fake.removeListener).toHaveBeenCalledWith('push:permission', fake.on.mock.calls[0][1])
   })
 })

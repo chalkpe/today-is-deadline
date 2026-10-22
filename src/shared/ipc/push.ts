@@ -6,7 +6,6 @@ import type { PermissionStatus } from './events'
 export const PUSH = {
   TODAY: 'push:today',
   SETTINGS: 'push:settings',
-  COUNTING: 'push:counting',
   ALERT: 'push:alert',
   ADJUSTMENTS: 'push:adjustments',
   PERMISSION: 'push:permission',
@@ -15,7 +14,6 @@ export const PUSH = {
 export interface IPush {
   'push:today': TodayStats
   'push:settings': Settings
-  'push:counting': boolean
   'push:alert': { action: 'play'; url: string } | { action: 'stop' }
   'push:adjustments': Adjustment[]
   'push:permission': PermissionStatus

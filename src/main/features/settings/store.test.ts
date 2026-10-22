@@ -80,6 +80,29 @@ describe('createSettingsStore', () => {
     expect(errors).toEqual([SETTINGS_ERRORS.soundFile])
   })
 
+  it('저장된 소리 파일이 그사이 지워져도 소리를 바꾸지 않는 set은 저장한다', () => {
+    const sound = path.join(dir, 'a.mp3')
+    fs.writeFileSync(sound, '')
+    fs.writeFileSync(file, JSON.stringify({ alert: { sound: { kind: 'file', path: sound } } }))
+    const store = make()
+    fs.rmSync(sound)
+    const cur = store.get()
+    expect(store.set({ ...cur, widget: { ...cur.widget, locked: true } })).toEqual([])
+    expect(store.get().widget.locked).toBe(true)
+  })
+
+  it('시작 때 고친 소리 설정을 저장하지 못해도 고친 값으로 읽는다', () => {
+    fs.writeFileSync(file, JSON.stringify({ alert: { sound: { kind: 'file', path: path.join(dir, 'nope.mp3') } } }))
+    const rename = vi.spyOn(fs, 'renameSync').mockImplementation(() => {
+      throw new Error('EPERM')
+    })
+    try {
+      expect(make().get().alert.sound).toEqual({ kind: 'builtin', name: 'rooster' })
+    } finally {
+      rename.mockRestore()
+    }
+  })
+
   it('set 성공 시 (next, prev)로 통지하고 저장한다', () => {
     const store = make()
     const prev = store.get()

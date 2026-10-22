@@ -35,6 +35,14 @@ describe('normalizeSettings', () => {
     expect(s.widget.y).toBeNull()
   })
 
+  it.each([['nope'], [''], ['red'], ['#3d5'], ['#39d3531']])('#rrggbb가 아닌 기준색 %j는 기본값으로 고친다', (baseColor) => {
+    expect(normalizeSettings({ heatmap: { baseColor } }).heatmap.baseColor).toBe(DEFAULT_SETTINGS.heatmap.baseColor)
+  })
+
+  it('#rrggbb 기준색은 대소문자 그대로 보존한다', () => {
+    expect(normalizeSettings({ heatmap: { baseColor: '#AbCdEf' } }).heatmap.baseColor).toBe('#AbCdEf')
+  })
+
   it('파일 소리 설정을 보존한다', () => {
     expect(normalizeSettings({ alert: { sound: { kind: 'file', path: '/a.mp3' } } }).alert.sound).toEqual({ kind: 'file', path: '/a.mp3' })
   })
