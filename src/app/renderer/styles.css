@@ -4,6 +4,57 @@
 /* renderer 빌드 루트(src/app/renderer) 밖의 FSD 레이어도 클래스를 찾게 한다 */
 @source "../../renderer";
 
+/*
+ * 테마 토큰. 기본은 라이트, prefers-color-scheme이 다크면 다크 값으로 덮는다.
+ * main이 설정의 외관을 nativeTheme.themeSource로 넣으므로 이 미디어 쿼리가 시스템·라이트·다크 선택을 그대로 따른다.
+ */
+:root {
+  --panel-bg: rgba(255, 255, 255, 0.92);
+  --panel-border: rgba(0, 0, 0, 0.12);
+  --page-bg: #f5f5f7;
+  --surface: #ffffff;
+  --card-border: #e5e5e7;
+  --fg: #1d1d1f;
+  --fg-muted: #6e6e73;
+  --cell-empty: #e6e6ea;
+  --outline: #1d1d1f;
+  --control-border: #d1d1d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --panel-bg: rgba(26, 26, 30, 0.92);
+    --panel-border: rgba(255, 255, 255, 0.12);
+    --page-bg: #1c1c1f;
+    --surface: #26262a;
+    --card-border: #3a3a3f;
+    --fg: #e8e8ea;
+    --fg-muted: #9a9aa0;
+    --cell-empty: #2c2c31;
+    --outline: #ffffff;
+    --control-border: #3a3a3f;
+  }
+}
+
+/* bg-panel, text-fg, border-card-border 같은 유틸리티로 쓴다. inline이라 위 변수가 바뀌면 클래스 색도 바로 따라간다. */
+@theme inline {
+  --color-panel: var(--panel-bg);
+  --color-panel-border: var(--panel-border);
+  --color-page: var(--page-bg);
+  --color-surface: var(--surface);
+  --color-card-border: var(--card-border);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-cell-empty: var(--cell-empty);
+  --color-outline: var(--outline);
+  --color-control-border: var(--control-border);
+}
+
+/* 날짜·숫자 입력, 색 선택기, 스크롤 막대 같은 기본 컨트롤도 테마를 따라 그린다 */
+html {
+  color-scheme: light dark;
+}
+
 /* 위젯은 투명 창이라 문서 배경을 비워 둔다. 패널과 다른 창의 배경은 각 페이지가 칠한다. */
 html,
 body {
