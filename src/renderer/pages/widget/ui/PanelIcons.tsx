@@ -37,7 +37,7 @@ function LockIcon({ locked }: { locked: boolean }) {
 
 function SettingsIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="size-3">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="size-3.5">
       <path d="M2 4.5h12M2 11.5h12" />
       <circle cx={5.5} cy={4.5} r={1.75} fill="currentColor" />
       <circle cx={10.5} cy={11.5} r={1.75} fill="currentColor" />

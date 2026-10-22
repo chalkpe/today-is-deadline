@@ -1,6 +1,6 @@
 type Props = { onOpenSettings(): void; onRequest(): void }
 
-const BUTTON = 'w-full rounded bg-control-border/60 px-2 py-1 text-[11px] text-fg hover:bg-control-border'
+const BUTTON = 'w-full rounded bg-surface px-2 py-1 text-[11px] text-fg ring-1 ring-control-border ring-inset hover:bg-control-border/60'
 
 /** 높이는 PERMISSION_NOTICE_HEIGHT로 고정이다. 최소 너비(140)에서도 넘치지 않게 버튼은 세로로 쌓는다. */
 export function PermissionNotice({ onOpenSettings, onRequest }: Props) {

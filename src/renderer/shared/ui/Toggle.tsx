@@ -9,7 +9,7 @@ export function Toggle({ label, checked, onChange, className }: Props) {
     <label className={cn('flex cursor-pointer items-center justify-between gap-4', className)}>
       <span className="text-fg">{label}</span>
       <input type="checkbox" className="peer sr-only" checked={checked} onChange={(event) => onChange(event.target.checked)} />
-      <span className="relative h-5 w-9 shrink-0 rounded-full bg-control-border transition-colors peer-checked:bg-emerald-500 peer-checked:*:translate-x-4">
+      <span className="relative h-5 w-9 shrink-0 rounded-full bg-fg-muted/50 transition-colors peer-checked:bg-emerald-500 peer-checked:*:translate-x-4">
         <span className="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform" />
       </span>
     </label>
