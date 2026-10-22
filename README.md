@@ -56,6 +56,8 @@ pnpm package:win    # Windows: x64 NSIS 설치 파일 → release/today-is-deadl
 
 GitHub Actions(`.github/workflows/ci.yml`)가 푸시와 PR마다 `macos-latest`, `windows-latest`에서 Rust 애드온 빌드·테스트, `pnpm check`, `pnpm typecheck`, `pnpm test`, 패키징(배포 없음)을 돌리고, macOS dmg(arm64·x64)와 Windows 설치 파일을 산출물로 올린다.
 
+`v*` 태그를 푸시하면 같은 워크플로의 `release` 잡이 그 산출물을 태그와 같은 이름의 GitHub Release에 올린다(Release가 없으면 만든다). 파일 이름의 버전은 `package.json`의 `version`을 따르므로 태그를 만들기 전에 맞춘다.
+
 ## 데이터 위치
 
 모두 Electron `userData` 폴더에 있다. macOS는 `~/Library/Application Support/today-is-deadline/`, Windows는 `%APPDATA%\today-is-deadline\`이다.
