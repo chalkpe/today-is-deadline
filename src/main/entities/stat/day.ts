@@ -1,15 +1,18 @@
 import type { Db } from '@main/shared/db'
 import { addDays, type DateKey } from '@shared/model/calendar'
+import type { AppScope } from '@shared/model/settings'
 import { type DayStats, type HourBucket, longestGap, topAppIds } from '@shared/model/stats'
+import { scopeFilter } from './scope'
 import { appShares } from './shares'
 import { dayTotals } from './totals'
 
 type Row = { minute: number; appId: string; count: number }
 
-function dayRows(db: Db, date: DateKey): Row[] {
+function dayRows(db: Db, date: DateKey, scope: AppScope): Row[] {
+  const where = scopeFilter(scope, 'app_id')
   return db.sqlite
-    .prepare('SELECT minute, app_id AS appId, SUM(count) AS count FROM minute_counts WHERE date = ? GROUP BY minute, app_id')
-    .all(date) as Row[]
+    .prepare(`SELECT minute, app_id AS appId, SUM(count) AS count FROM minute_counts WHERE date = ?${where.sql} GROUP BY minute, app_id`)
+    .all(date, ...where.params) as Row[]
 }
 
 function hourlyBuckets(rows: Row[]): HourBucket[] {
@@ -22,14 +25,14 @@ function hourlyBuckets(rows: Row[]): HourBucket[] {
   return hourly
 }
 
-export function dayStats(db: Db, date: DateKey): DayStats {
-  const { total } = dayTotals(db, date, date)[0]
+export function dayStats(db: Db, date: DateKey, scope: AppScope = null): DayStats {
+  const { total } = dayTotals(db, date, date, scope)[0]
   const previousDate = addDays(date, -1)
-  const previous = dayTotals(db, previousDate, previousDate)[0]
+  const previous = dayTotals(db, previousDate, previousDate, scope)[0]
   const adjustment = (
     db.sqlite.prepare('SELECT COALESCE(SUM(delta), 0) AS sum FROM adjustments WHERE date = ?').get(date) as { sum: number }
   ).sum
-  const rows = dayRows(db, date)
+  const rows = dayRows(db, date, scope)
   const hourly = hourlyBuckets(rows)
   const strip = new Array<number>(144).fill(0)
   const active = new Set<number>()
@@ -38,7 +41,7 @@ export function dayStats(db: Db, date: DateKey): DayStats {
     if (r.count > 0) active.add(r.minute)
   }
   const peak = hourly.reduce((best, h) => (h.total > best.total ? h : best), hourly[0])
-  const apps = appShares(db, date, date)
+  const apps = appShares(db, date, date, scope)
   return {
     date,
     total,

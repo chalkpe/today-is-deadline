@@ -20,4 +20,5 @@ export const CHANNELS = {
   SOUND_PICK_FILE: 'sound:pickFile',
   SOUND_URL: 'sound:url',
   APP_ICON: 'app:icon',
+  APPS_LIST: 'apps:list',
 } as const

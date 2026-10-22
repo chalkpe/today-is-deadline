@@ -3,12 +3,13 @@ import { recordMinutes } from '@main/entities/stat'
 import { openDb } from '@main/shared/db'
 import { INVALID_DATE } from '@main/shared/ipc'
 import { addDays } from '@shared/model/calendar'
+import type { AppScope } from '@shared/model/settings'
 import { describe, expect, it } from 'vitest'
 import { statsHandlers } from './ipc'
 
 const NOW = new Date(2026, 9, 22, 15, 0) // 2026-10-22(목)
 
-function setup() {
+function setup(scope: AppScope = null) {
   const db = openDb(':memory:')
   upsertApp(db, { id: 'vscode', name: 'VS Code', path: '' }, null, 't')
   upsertApp(db, { id: 'slack', name: 'Slack', path: '' }, new Uint8Array([1, 2, 3]), 't')
@@ -16,7 +17,7 @@ function setup() {
     { date: '2026-10-22', minute: 600, appId: 'vscode', count: 30 },
     { date: '2026-10-21', minute: 600, appId: 'slack', count: 5 },
   ])
-  return statsHandlers({ db, now: () => NOW })
+  return statsHandlers({ db, now: () => NOW, scope: () => scope })
 }
 
 describe('statsHandlers', () => {
@@ -62,6 +63,26 @@ describe('statsHandlers', () => {
     const h = setup()
     expect(h['stats:day']('2026-10-21')).toMatchObject({ date: '2026-10-21', total: 5 })
     expect(h['day:detail']('2026-10-22')).toMatchObject({ date: '2026-10-22', total: 30, adjustment: 0 })
+  })
+
+  it('앱 필터가 켜져 있으면 모든 조회에 범위를 적용한다', () => {
+    const h = setup(['slack'])
+    expect(h['heatmap:range']({ start: '2026-10-21', end: '2026-10-22' })).toEqual([
+      { date: '2026-10-21', total: 5 },
+      { date: '2026-10-22', total: 0 },
+    ])
+    expect(h['day:detail']('2026-10-22')).toMatchObject({ total: 0, apps: [] })
+    expect(h['stats:today']()).toMatchObject({ total: 0, weekTotal: 5 })
+    expect(h['stats:day']('2026-10-22')).toMatchObject({ total: 0, previousTotal: 5 })
+    expect(h['stats:week']('2026-10-22')).toMatchObject({ total: 5 })
+    expect(h['stats:month']('2026-10')).toMatchObject({ total: 5 })
+  })
+
+  it('apps:list는 필터와 무관하게 집계된 모든 앱을 많은 순으로 돌려준다', () => {
+    expect(setup([])['apps:list']()).toEqual([
+      { appId: 'vscode', name: 'VS Code' },
+      { appId: 'slack', name: 'Slack' },
+    ])
   })
 
   it('app:icon은 저장된 PNG를 data URL로, 없으면 null', () => {

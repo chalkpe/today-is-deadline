@@ -23,3 +23,14 @@ describe('weekStats', () => {
     expect(s.dowHour[3][15]).toBe(1430)
   })
 })
+
+describe('weekStats 앱 범위', () => {
+  it('범위 밖 앱은 일별 조각·요일×시간 격자·합계에서 빠진다', () => {
+    const s = weekStats(setup(), '2026-10-19', ['slack'])
+    expect(s).toMatchObject({ total: 505, activeDays: 1, topApps: ['slack'] })
+    expect(s.daily[2]).toEqual({ date: '2026-10-21', total: 0, byApp: {} })
+    expect(s.daily[3]).toEqual({ date: '2026-10-22', total: 505, byApp: { slack: 5 } })
+    expect(s.dowHour[3][15]).toBe(0)
+    expect(s.dowHour[3][12]).toBe(5)
+  })
+})

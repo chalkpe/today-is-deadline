@@ -4,7 +4,7 @@ import type { PermissionStatus } from '@shared/ipc/events'
 import { type DateKey, heatmapRange, msUntilNextMidnight, toDateKey, visibleWeeks } from '@shared/model/calendar'
 import type { IntensityContext } from '@shared/model/intensity'
 import { DOW_LABEL_WIDTH, MAX_WEEKS, MIN_WEEKS, PANEL_PADDING, PITCH, panelHeight } from '@shared/model/layout'
-import type { Settings } from '@shared/model/settings'
+import { type Settings, scopeKey } from '@shared/model/settings'
 import type { DayDetail, DayTotal, TodayStats } from '@shared/model/stats'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -71,7 +71,8 @@ export function useWidgetData(): WidgetData | null {
   const loadTotals = useLatest<DayTotal[]>(setTotals)
   const loadDetail = useLatest<DayDetail | null>(setDetail)
 
-  const ready = settings !== null
+  // 앱 필터가 바뀌면 날짜별 합계·하루 내역을 다시 조회한다. 설정을 받기 전에는 null
+  const scope = settings && scopeKey(settings)
   const weeks = weeksForWidth(width, settings?.heatmap.showDayLabels ?? false)
   const range = useMemo(() => heatmapRange(todayKey, weeks), [todayKey, weeks])
 
@@ -113,21 +114,22 @@ export function useWidgetData(): WidgetData | null {
     }
   }, [])
 
-  // 보이는 범위(너비·요일 라벨·날짜)가 바뀌면 다시 조회한다
+  // 보이는 범위(너비·요일 라벨·날짜)나 앱 필터가 바뀌면 다시 조회한다
   useEffect(() => {
-    if (ready) loadTotals(api.invoke('heatmap:range', range))
-  }, [ready, range, loadTotals])
+    if (scope !== null) loadTotals(api.invoke('heatmap:range', range))
+  }, [scope, range, loadTotals])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 앱 필터(scope)가 바뀌면 같은 날의 내역도 다시 조회한다
   useEffect(() => {
     loadDetail(selected === null ? Promise.resolve(null) : api.invoke('day:detail', selected))
-  }, [selected, loadDetail])
+  }, [selected, scope, loadDetail])
 
   // 창을 줄여 선택한 날이 보이지 않게 되면 펼침을 닫는다
   useEffect(() => {
     if (selected !== null && selected < range.start) setSelected(null)
   }, [selected, range.start])
 
-  // 날짜별 합계는 설정과 무관하다. 보이는 범위가 바뀌는 설정(요일 라벨)은 위의 범위 effect가 다시 조회한다.
+  // 날짜별 합계는 앱 필터 말고는 설정과 무관하다. 보이는 범위가 바뀌는 설정(요일 라벨)과 앱 필터는 위의 effect가 다시 조회한다.
   usePush('push:settings', setSettings)
   usePush('push:permission', setPermission)
   usePush('push:today', (next) => {

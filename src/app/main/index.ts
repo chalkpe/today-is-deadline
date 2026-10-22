@@ -12,6 +12,7 @@ import { openDb } from '@main/shared/db'
 import { registerHandlers } from '@main/shared/ipc'
 import { createLogger, logUncaught, startFailureMessage } from '@main/shared/log'
 import { loadNativeHook, resolveNativeDir } from '@main/shared/native'
+import { appScope } from '@shared/model/settings'
 import { app, dialog, ipcMain } from 'electron'
 
 // 의존성을 만들고 연결만 한다. 각 기능이 반응할 이벤트는 기능 안에서 구독한다.
@@ -45,7 +46,7 @@ function start(): void {
     log,
     permissionDenied: counting.status() === 'denied',
   })
-  const today = createTodayPusher({ db, now, send: broadcast, log })
+  const today = createTodayPusher({ db, now, settings, send: broadcast, log })
   const alert = startIdleAlert({ settings, counting, soundUrl: soundUrlFor, send: broadcast, log })
   publishSettings(settings, broadcast)
   counting.onTodayChanged(today.push)
@@ -54,7 +55,7 @@ function start(): void {
   // 모든 채널을 한 번에 등록한다(빠진 채널은 컴파일 오류). start()가 끝나야 renderer의 invoke가 처리되므로 시점은 안전하다.
   registerHandlers(ipcMain, {
     ...settingsHandlers(settings),
-    ...statsHandlers({ db, now }),
+    ...statsHandlers({ db, now, scope: () => appScope(settings.get()) }),
     ...adjustmentHandlers({ db, now, send: broadcast, pushToday: today.pushNow }),
     ...countingHandlers(counting),
     ...windowHandlers(windows),

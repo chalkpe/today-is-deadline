@@ -18,7 +18,17 @@ export type Settings = {
     showIcons: boolean
   }
   alert: { enabled: boolean; idleSeconds: number; repeatSeconds: number; sound: SoundSetting }
-  widget: { x: number | null; y: number | null; width: number; locked: boolean; visible: boolean; displayId: number | null }
+  widget: {
+    x: number | null
+    y: number | null
+    width: number
+    locked: boolean
+    visible: boolean
+    displayId: number | null
+    alwaysOnTop: boolean
+  }
+  /** 켜면 included에 든 앱의 입력만 히트맵·통계에 보인다. 목록에 없는 앱(새로 집계된 앱 포함)은 제외다. */
+  filter: { enabled: boolean; included: string[] }
   stats: { width: number; height: number }
   general: { openAtLogin: boolean; appearance: Appearance }
 }
@@ -38,9 +48,23 @@ export const DEFAULT_SETTINGS: Settings = {
     showIcons: true,
   },
   alert: { enabled: true, idleSeconds: 300, repeatSeconds: 60, sound: { kind: 'builtin', name: 'rooster' } },
-  widget: { x: null, y: null, width: 320, locked: false, visible: true, displayId: null },
+  widget: { x: null, y: null, width: 320, locked: false, visible: true, displayId: null, alwaysOnTop: true },
+  filter: { enabled: false, included: [] },
   stats: { width: 760, height: 640 },
   general: { openAtLogin: false, appearance: 'system' },
+}
+
+/** 통계 조회에 넣을 앱 id 목록. null이면 모든 앱 */
+export type AppScope = readonly string[] | null
+
+/** 필터가 꺼져 있으면 null(모든 앱), 켜져 있으면 포함한 앱 */
+export function appScope(s: Settings): AppScope {
+  return s.filter.enabled ? s.filter.included : null
+}
+
+/** 앱 범위를 비교하는 문자열. 설정이 바뀌어도 이 값이 같으면 통계를 다시 조회하지 않는다 */
+export function scopeKey(s: Settings): string {
+  return JSON.stringify(appScope(s))
 }
 
 /** 대기 시간(T1)·반복 간격(T2)의 범위(초). 하루를 넘는 값은 받지 않는다. */
@@ -64,6 +88,8 @@ const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d)
 const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d)
 const nullableNum = (v: unknown, d: number | null) =>
   v === null || (typeof v === 'number' && Number.isFinite(v)) ? (v as number | null) : d
+/** 문자열만 남기고 중복을 뺀다. 배열이 아니면 기본값 */
+const strings = (v: unknown, d: string[]) => (Array.isArray(v) ? [...new Set(v.filter((x): x is string => typeof x === 'string'))] : d)
 
 /** 색 입력(<input type="color">)이 다루는 '#rrggbb'. 다른 문자열은 색 계산(culori)에서 예외가 나므로 타입이 틀린 값으로 본다. */
 const isHexColor = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)
@@ -90,6 +116,7 @@ export function coerceSettings(input: unknown): Settings {
   const heatmap = section(root.heatmap)
   const alert = section(root.alert)
   const widget = section(root.widget)
+  const filter = section(root.filter)
   const stats = section(root.stats)
   const general = section(root.general)
   return {
@@ -118,7 +145,9 @@ export function coerceSettings(input: unknown): Settings {
       locked: bool(widget.locked, d.widget.locked),
       visible: bool(widget.visible, d.widget.visible),
       displayId: nullableNum(widget.displayId, d.widget.displayId),
+      alwaysOnTop: bool(widget.alwaysOnTop, d.widget.alwaysOnTop),
     },
+    filter: { enabled: bool(filter.enabled, d.filter.enabled), included: strings(filter.included, d.filter.included) },
     stats: { width: num(stats.width, d.stats.width), height: num(stats.height, d.stats.height) },
     general: {
       openAtLogin: bool(general.openAtLogin, d.general.openAtLogin),

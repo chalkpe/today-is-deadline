@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coerceSettings, DEFAULT_SETTINGS, normalizeSettings, SETTINGS_ERRORS, validateSettings } from './settings'
+import { appScope, coerceSettings, DEFAULT_SETTINGS, normalizeSettings, SETTINGS_ERRORS, validateSettings } from './settings'
 
 const withAlert = (alert: Partial<(typeof DEFAULT_SETTINGS)['alert']>) => ({
   ...DEFAULT_SETTINGS,
@@ -140,5 +140,37 @@ describe('general.appearance', () => {
     expect(normalizeSettings({ general: { appearance: 'light' } }).general.appearance).toBe('light')
     expect(normalizeSettings({ general: { appearance: 'dark' } }).general.appearance).toBe('dark')
     expect(normalizeSettings({ general: { openAtLogin: true } }).general).toEqual({ openAtLogin: true, appearance: 'system' })
+  })
+})
+
+describe('widget.alwaysOnTop', () => {
+  it('없거나 boolean이 아니면 켜짐, false는 보존한다', () => {
+    expect(normalizeSettings({}).widget.alwaysOnTop).toBe(true)
+    expect(normalizeSettings({ widget: { alwaysOnTop: 'no' } }).widget.alwaysOnTop).toBe(true)
+    expect(normalizeSettings({ widget: { alwaysOnTop: false, x: 3 } }).widget).toMatchObject({ alwaysOnTop: false, x: 3 })
+  })
+})
+
+describe('filter', () => {
+  it('없으면 꺼짐·빈 목록', () => {
+    expect(normalizeSettings({}).filter).toEqual({ enabled: false, included: [] })
+  })
+  it('목록은 문자열만 남기고 중복을 뺀다', () => {
+    expect(normalizeSettings({ filter: { enabled: true, included: ['a', 1, null, 'b', 'a'] } }).filter).toEqual({
+      enabled: true,
+      included: ['a', 'b'],
+    })
+  })
+  it('배열이 아닌 목록은 빈 목록이다', () => {
+    expect(coerceSettings({ filter: { enabled: true, included: 'a' } }).filter).toEqual({ enabled: true, included: [] })
+  })
+})
+
+describe('appScope', () => {
+  it('필터가 꺼져 있으면 null, 켜져 있으면 포함한 앱 목록', () => {
+    const on = { ...DEFAULT_SETTINGS, filter: { enabled: true, included: ['a'] } }
+    expect(appScope({ ...on, filter: { ...on.filter, enabled: false } })).toBeNull()
+    expect(appScope(on)).toEqual(['a'])
+    expect(appScope({ ...on, filter: { enabled: true, included: [] } })).toEqual([])
   })
 })

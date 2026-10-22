@@ -9,14 +9,17 @@ export type SettingsPath =
   | 'heatmap.showMonthLabels'
   | 'heatmap.showDayLabels'
   | 'heatmap.showIcons'
+  | 'filter.enabled'
+  | 'filter.included'
   | 'alert.enabled'
   | 'alert.idleSeconds'
   | 'alert.repeatSeconds'
   | 'alert.sound'
+  | 'widget.alwaysOnTop'
   | 'general.openAtLogin'
   | 'general.appearance'
 
-/** 설정 창의 묶음(히트맵·알림·일반). 오류는 바꾼 필드의 묶음 아래에 보여 준다. */
+/** 설정 경로의 묶음(히트맵·앱 필터·알림·위젯·일반). 오류는 바꾼 필드의 묶음 아래에 보여 준다(위젯 묶음은 일반 섹션에 있다). */
 export type SettingsGroup = SettingsPath extends `${infer G}.${string}` ? G : never
 
 export function groupOf(path: SettingsPath): SettingsGroup {
@@ -80,4 +83,9 @@ export function errorsFor(s: Settings): string[] {
 /** 소리 파일 경로의 파일 이름(macOS `/`, Windows `\` 모두) */
 export function fileNameOf(path: string): string {
   return path.split(/[\\/]/).pop() || path
+}
+
+/** 앱 필터 목록에서 appId를 넣거나 뺀다. 원래 순서를 지키고 새 앱은 끝에 붙인다. */
+export function toggleIncluded(included: readonly string[], appId: string): string[] {
+  return included.includes(appId) ? included.filter((id) => id !== appId) : [...included, appId]
 }

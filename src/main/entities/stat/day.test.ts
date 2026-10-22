@@ -30,3 +30,15 @@ describe('dayStats', () => {
     expect(s).toMatchObject({ total: 0, peakHour: null, longestGap: null, activeMinutes: 0 })
   })
 })
+
+describe('dayStats 앱 범위', () => {
+  it('범위 밖 앱은 합계·시간대·활동 분·전날 합계에서 빠지고 조정은 남는다', () => {
+    const s = dayStats(setup(), '2026-10-22', ['slack'])
+    expect(s).toMatchObject({ total: 505, adjustment: 500, previousTotal: 0, activeMinutes: 1 })
+    expect(s.peakHour).toEqual({ hour: 12, count: 5 })
+    expect(s.hourly[9]).toEqual({ hour: 9, total: 0, byApp: {} })
+    expect(s.strip[73]).toBe(5)
+    expect(s.apps).toEqual([{ appId: 'slack', name: 'Slack', count: 5, ratio: 1 }])
+    expect(s.topApps).toEqual(['slack'])
+  })
+})

@@ -5,6 +5,7 @@ import type { Logger } from '@main/shared/log'
 import { throttle } from '@main/shared/timing'
 import { PUSH } from '@shared/ipc'
 import { toDateKey } from '@shared/model/calendar'
+import { appScope, type Settings, scopeKey } from '@shared/model/settings'
 import type { TodayStats } from '@shared/model/stats'
 
 export type TodayPusher = {
@@ -15,15 +16,22 @@ export type TodayPusher = {
   cancel(): void
 }
 
-type Deps = { db: Db; now: () => Date; send: Broadcast; log: Pick<Logger, 'error'>; intervalMs?: number }
+type Deps = {
+  db: Db
+  now: () => Date
+  settings: { get(): Settings; onChange(listener: (next: Settings, prev: Settings) => void): () => void }
+  send: Broadcast
+  log: Pick<Logger, 'error'>
+  intervalMs?: number
+}
 
-/** 오늘 통계(PUSH.TODAY)를 계산해 모든 창에 보낸다. */
-export function createTodayPusher({ db, now, send, log, intervalMs = 1000 }: Deps): TodayPusher {
+/** 오늘 통계(PUSH.TODAY)를 앱 필터를 적용해 계산하고 모든 창에 보낸다. 앱 필터가 바뀌면 바로 다시 보낸다. */
+export function createTodayPusher({ db, now, settings, send, log, intervalMs = 1000 }: Deps): TodayPusher {
   const pushNow = () => {
     // 타이머에서도 불리므로 예외가 main 프로세스 밖으로 새지 않게 한다
     let stats: TodayStats
     try {
-      stats = todayStats(db, toDateKey(now()))
+      stats = todayStats(db, toDateKey(now()), appScope(settings.get()))
     } catch (err) {
       log.error('push:today', err)
       return
@@ -31,5 +39,8 @@ export function createTodayPusher({ db, now, send, log, intervalMs = 1000 }: Dep
     send(PUSH.TODAY, stats)
   }
   const throttled = throttle(pushNow, intervalMs)
+  settings.onChange((next, prev) => {
+    if (scopeKey(next) !== scopeKey(prev)) pushNow()
+  })
   return { push: throttled.call, pushNow, cancel: throttled.cancel }
 }

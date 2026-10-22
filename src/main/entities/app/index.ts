@@ -1,5 +1,6 @@
 import type { Db } from '@main/shared/db'
 import type { AppIdentity } from '@main/shared/native'
+import type { KnownApp } from '@shared/model/stats'
 
 export const UNKNOWN_APP: AppIdentity = { id: 'unknown', name: '알 수 없음', path: '' }
 
@@ -34,4 +35,15 @@ export function getApp(
     | undefined
   if (!row) return null
   return { id: row.id, name: row.name, path: row.path, iconPng: row.icon_png, lastSeen: row.last_seen }
+}
+
+/** 지금까지 집계된 모든 앱. 전체 기간 타수가 많은 순(동률은 이름 순)이다. */
+export function listApps(db: Db): KnownApp[] {
+  return db.sqlite
+    .prepare(
+      `SELECT a.id AS appId, a.name AS name FROM apps a
+       LEFT JOIN (SELECT app_id, SUM(count) AS total FROM minute_counts GROUP BY app_id) m ON m.app_id = a.id
+       ORDER BY COALESCE(m.total, 0) DESC, a.name ASC, a.id ASC`,
+    )
+    .all() as KnownApp[]
 }

@@ -5,7 +5,7 @@ import { app, screen } from 'electron'
 import type { RendererSource, SecondaryKind } from './page'
 import { placeResized, resizeTarget } from './resize'
 import { createSecondaryWindows } from './secondary'
-import { applyLock, createWidgetWindow } from './widget'
+import { applyAlwaysOnTop, applyLock, createWidgetWindow } from './widget'
 
 export * from './bounds'
 export { broadcast } from './broadcast'
@@ -33,7 +33,7 @@ export type Windows = {
   prepareQuit(): void
 }
 
-/** 위젯 창을 만들고, 설정(잠금·표시 여부)과 창 상태(위치·너비)를 서로 맞춘다. */
+/** 위젯 창을 만들고, 설정(잠금·항상 위·표시 여부)과 창 상태(위치·너비)를 서로 맞춘다. */
 export function createWindows({ settings, preload, source, log, permissionDenied }: Deps): Windows {
   let quitting = false
   const onLoadError = (err: unknown) => log.error('window: load failed', err)
@@ -68,6 +68,7 @@ export function createWindows({ settings, preload, source, log, permissionDenied
   settings.onChange((next, prev) => {
     if (widget.isDestroyed()) return
     if (next.widget.locked !== prev.widget.locked) applyLock(widget, next.widget.locked)
+    if (next.widget.alwaysOnTop !== prev.widget.alwaysOnTop) applyAlwaysOnTop(widget, next.widget.alwaysOnTop)
     if (next.widget.visible && !widget.isVisible()) widget.showInactive()
     else if (!next.widget.visible && widget.isVisible()) widget.hide()
   })

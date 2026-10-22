@@ -1,6 +1,7 @@
+import { recordMinutes } from '@main/entities/stat'
 import { openDb } from '@main/shared/db'
 import { describe, expect, it } from 'vitest'
-import { getApp, normalizeApp, UNKNOWN_APP, upsertApp } from './index'
+import { getApp, listApps, normalizeApp, UNKNOWN_APP, upsertApp } from './index'
 
 describe('normalizeApp', () => {
   it('null 또는 빈 id는 UNKNOWN_APP', () => {
@@ -24,5 +25,29 @@ describe('upsertApp', () => {
     expect(got?.lastSeen).toBe('2026-10-21T00:00:00')
     expect(Array.from(got?.iconPng ?? [])).toEqual([1, 2])
     expect(getApp(db, 'none')).toBeNull()
+  })
+})
+
+describe('listApps', () => {
+  it('전체 기간 타수가 많은 순, 기록이 아직 없는 앱은 뒤에 이름 순으로', () => {
+    const db = openDb(':memory:')
+    for (const [id, name] of [
+      ['a', 'A'],
+      ['b', 'B'],
+      ['c', 'C'],
+      ['d', 'D'],
+    ])
+      upsertApp(db, { id, name, path: '' }, null, 't')
+    recordMinutes(db, [
+      { date: '2026-10-20', minute: 1, appId: 'a', count: 5 },
+      { date: '2026-10-21', minute: 1, appId: 'b', count: 3 },
+      { date: '2026-10-22', minute: 1, appId: 'b', count: 3 },
+    ])
+    expect(listApps(db)).toEqual([
+      { appId: 'b', name: 'B' },
+      { appId: 'a', name: 'A' },
+      { appId: 'c', name: 'C' },
+      { appId: 'd', name: 'D' },
+    ])
   })
 })

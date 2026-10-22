@@ -1,6 +1,6 @@
 import { DEFAULT_SETTINGS, SETTINGS_ERRORS, type Settings, validateSettings } from '@shared/model/settings'
 import { describe, expect, it } from 'vitest'
-import { applyField, errorsByGroup, errorsFor, fileNameOf, groupOf } from './form'
+import { applyField, errorsByGroup, errorsFor, fileNameOf, groupOf, toggleIncluded } from './form'
 
 const base = (): Settings => structuredClone(DEFAULT_SETTINGS)
 
@@ -47,6 +47,15 @@ describe('applyField', () => {
     expect(s).toEqual(DEFAULT_SETTINGS)
   })
 
+  it('앱 필터·항상 위를 불변 갱신한다', () => {
+    const s = base()
+    const next = applyField(applyField(s, 'filter.enabled', true), 'filter.included', ['a', 'b'])
+    expect(next.filter).toEqual({ enabled: true, included: ['a', 'b'] })
+    expect(s.filter).toEqual({ enabled: false, included: [] })
+    expect(next.heatmap).toBe(s.heatmap)
+    expect(applyField(s, 'widget.alwaysOnTop', false).widget).toEqual({ ...s.widget, alwaysOnTop: false })
+  })
+
   it('외관을 불변 갱신한다', () => {
     const s = base()
     const next = applyField(s, 'general.appearance', 'light')
@@ -54,6 +63,15 @@ describe('applyField', () => {
     expect(s.general.appearance).toBe('system')
     expect(next.general).not.toBe(s.general)
     expect(next.heatmap).toBe(s.heatmap)
+  })
+})
+
+describe('toggleIncluded', () => {
+  it('없으면 끝에 넣고, 있으면 순서를 지킨 채 뺀다', () => {
+    const included = ['a', 'b', 'c']
+    expect(toggleIncluded(included, 'd')).toEqual(['a', 'b', 'c', 'd'])
+    expect(toggleIncluded(included, 'b')).toEqual(['a', 'c'])
+    expect(included).toEqual(['a', 'b', 'c'])
   })
 })
 
@@ -87,6 +105,8 @@ describe('groupOf', () => {
     expect(groupOf('alert.sound')).toBe('alert')
     expect(groupOf('general.openAtLogin')).toBe('general')
     expect(groupOf('general.appearance')).toBe('general')
+    expect(groupOf('filter.included')).toBe('filter')
+    expect(groupOf('widget.alwaysOnTop')).toBe('widget')
   })
 })
 

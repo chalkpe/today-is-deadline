@@ -1,6 +1,6 @@
 import type { DateKey, MonthKey } from '@shared/model/calendar'
 import type { Settings, SoundSetting } from '@shared/model/settings'
-import type { Adjustment, DayDetail, DayStats, DayTotal, MonthStats, TodayStats, WeekStats } from '@shared/model/stats'
+import type { Adjustment, DayDetail, DayStats, DayTotal, KnownApp, MonthStats, TodayStats, WeekStats } from '@shared/model/stats'
 
 export type PermissionStatus = 'granted' | 'denied' | 'not-required'
 
@@ -26,4 +26,5 @@ export interface IEvents {
   'sound:pickFile': { args: undefined; response: string | null }
   'sound:url': { args: SoundSetting; response: string } // 'sound://builtin/rooster' | 'sound://file/<경로 토큰 8자리 hex>'
   'app:icon': { args: string; response: string | null } // data URL
+  'apps:list': { args: undefined; response: KnownApp[] }
 }

@@ -2,7 +2,7 @@ import { contains, type Period } from '@renderer/features/period-nav'
 import { APP_PALETTE } from '@renderer/shared/lib/color'
 import { api, usePush } from '@renderer/shared/lib/ipc'
 import { type DateKey, msUntilNextMidnight, toDateKey } from '@shared/model/calendar'
-import { DEFAULT_SETTINGS, type Settings } from '@shared/model/settings'
+import { DEFAULT_SETTINGS, type Settings, scopeKey } from '@shared/model/settings'
 import { type DayStats, type MonthStats, topAppIds, type WeekStats } from '@shared/model/stats'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { type ColorRegistry, createColorRegistry } from './appColors'
@@ -57,7 +57,7 @@ export function useToday(): DateKey {
   return today
 }
 
-/** 기간의 통계와 색 설정. 오늘을 품는 기간이면 push:today마다, 조정이 바뀌면 언제나 다시 조회한다. */
+/** 기간의 통계와 색 설정. 오늘을 품는 기간이면 push:today마다, 조정이나 앱 필터가 바뀌면 언제나 다시 조회한다. */
 export function useStatsData(period: Period): StatsView {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [result, setResult] = useState<{ data: StatsData | null; failed: boolean }>({ data: null, failed: false })
@@ -78,7 +78,11 @@ export function useStatsData(period: Period): StatsView {
     )
   }, [])
 
-  useEffect(() => load(period), [period, load])
+  // 앱 필터가 바뀌면 다시 조회한다. 첫 조회는 설정을 받은 뒤에 한 번만 한다
+  const scope = settings && scopeKey(settings)
+  useEffect(() => {
+    if (scope !== null) load(period)
+  }, [period, scope, load])
 
   useEffect(() => {
     let alive = true

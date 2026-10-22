@@ -1,20 +1,37 @@
 import { upsertApp } from '@main/entities/app'
 import { recordMinutes } from '@main/entities/stat'
 import { openDb } from '@main/shared/db'
+import { DEFAULT_SETTINGS, type Settings } from '@shared/model/settings'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTodayPusher } from './today'
 
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())
 
-function setup() {
+const withFilter = (enabled: boolean, included: string[] = []): Settings => ({ ...DEFAULT_SETTINGS, filter: { enabled, included } })
+
+function setup(initial: Settings = DEFAULT_SETTINGS) {
   const db = openDb(':memory:')
   upsertApp(db, { id: 'vscode', name: 'VS Code', path: '' }, null, 't')
   const send = vi.fn()
   const log = { error: vi.fn() }
-  const pusher = createTodayPusher({ db, now: () => new Date(2026, 9, 22, 9, 0), send, log })
+  let current = initial
+  const listeners: ((next: Settings, prev: Settings) => void)[] = []
+  const settings = {
+    get: () => current,
+    onChange(listener: (next: Settings, prev: Settings) => void) {
+      listeners.push(listener)
+      return () => {}
+    },
+  }
+  const change = (next: Settings) => {
+    const prev = current
+    current = next
+    for (const listener of listeners) listener(next, prev)
+  }
+  const pusher = createTodayPusher({ db, now: () => new Date(2026, 9, 22, 9, 0), settings, send, log })
   const add = (count: number) => recordMinutes(db, [{ date: '2026-10-22', minute: 540, appId: 'vscode', count }])
-  return { db, send, log, pusher, add }
+  return { db, send, log, pusher, add, change }
 }
 
 describe('createTodayPusher', () => {
@@ -38,6 +55,28 @@ describe('createTodayPusher', () => {
     pusher.push()
     pusher.pushNow()
     expect(send).toHaveBeenCalledTimes(2)
+  })
+
+  it('앱 필터를 적용해 계산한다', () => {
+    const { send, pusher, add } = setup(withFilter(true, ['slack']))
+    add(10)
+    pusher.pushNow()
+    expect(send.mock.calls[0][1]).toMatchObject({ total: 0, apps: [] })
+  })
+
+  it('앱 범위가 바뀔 때만 바로 다시 보낸다', () => {
+    const { send, add, change } = setup()
+    add(10)
+    change({ ...DEFAULT_SETTINGS, widget: { ...DEFAULT_SETTINGS.widget, x: 5 } })
+    // 꺼진 필터의 목록만 바뀌면 범위는 그대로(모든 앱)다
+    change(withFilter(false, ['vscode']))
+    expect(send).not.toHaveBeenCalled()
+    change(withFilter(true, ['vscode']))
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(send.mock.calls[0][1]).toMatchObject({ total: 10 })
+    change(withFilter(true, []))
+    expect(send).toHaveBeenCalledTimes(2)
+    expect(send.mock.calls[1][1]).toMatchObject({ total: 0 })
   })
 
   it('조회 실패는 던지지 않고 로그로 남긴다', () => {

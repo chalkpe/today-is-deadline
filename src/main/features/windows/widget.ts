@@ -12,7 +12,7 @@ type Options = {
 }
 
 /**
- * 항상 위에 뜨는 투명·프레임 없는 위젯 창(#/widget).
+ * 투명·프레임 없는 위젯 창(#/widget). 설정에 따라 항상 위에 뜬다.
  * 사용자가 직접 크기를 바꾸지 못하게 resizable은 늘 false이고, 너비·높이는 widget:resize → setSize로만 바뀐다.
  */
 export function createWidgetWindow(settings: Settings, options: Options, onReady: (win: BrowserWindow) => void): BrowserWindow {
@@ -22,7 +22,7 @@ export function createWidgetWindow(settings: Settings, options: Options, onReady
     show: false,
     frame: false,
     transparent: true,
-    alwaysOnTop: true,
+    alwaysOnTop: settings.widget.alwaysOnTop,
     skipTaskbar: true,
     hasShadow: false,
     resizable: false,
@@ -31,12 +31,18 @@ export function createWidgetWindow(settings: Settings, options: Options, onReady
     fullscreenable: false,
     webPreferences: webPreferences(options.preload),
   })
-  if (process.platform === 'darwin') win.setAlwaysOnTop(true, 'floating')
+  applyAlwaysOnTop(win, settings.widget.alwaysOnTop)
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   applyLock(win, settings.widget.locked)
   win.once('ready-to-show', () => onReady(win))
   loadRoute(win, options.source, '/widget').catch(options.onLoadError)
   return win
+}
+
+/** 끄면 일반 창 높이(normal)로 내려가 다른 창에 가려진다. */
+export function applyAlwaysOnTop(win: BrowserWindow, alwaysOnTop: boolean): void {
+  if (alwaysOnTop) win.setAlwaysOnTop(true, 'floating')
+  else win.setAlwaysOnTop(false)
 }
 
 /** 잠금은 창 이동을 막는다. 드래그 영역·리사이즈 핸들은 renderer가 PUSH.SETTINGS의 widget.locked를 보고 끈다. */

@@ -40,3 +40,30 @@ describe('dayDetail', () => {
     expect(dayDetail(setup(), '2026-10-22')).toEqual({ date: '2026-10-22', total: 0, adjustment: 0, apps: [] })
   })
 })
+
+describe('앱 범위', () => {
+  const scoped = () => {
+    const db = setup()
+    recordMinutes(db, [
+      { date: '2026-10-21', minute: 5, appId: 'a', count: 70 },
+      { date: '2026-10-21', minute: 6, appId: 'b', count: 30 },
+    ])
+    return db
+  }
+
+  it('dayTotals는 범위 안 앱의 타수만 더하고 조정은 앱과 무관하게 더한다', () => {
+    const range = ['2026-10-21', '2026-10-21'] as const
+    expect(dayTotals(scoped(), ...range, null)).toEqual([{ date: '2026-10-21', total: 150 }])
+    expect(dayTotals(scoped(), ...range, ['b'])).toEqual([{ date: '2026-10-21', total: 80 }])
+    expect(dayTotals(scoped(), ...range, [])).toEqual([{ date: '2026-10-21', total: 50 }])
+  })
+
+  it('dayDetail은 범위 안 앱만 나열하고 비율도 그 안에서 계산한다', () => {
+    expect(dayDetail(scoped(), '2026-10-21', ['a', '없는 앱'])).toEqual({
+      date: '2026-10-21',
+      total: 120,
+      adjustment: 50,
+      apps: [{ appId: 'a', name: 'A', count: 70, ratio: 1 }],
+    })
+  })
+})

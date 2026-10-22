@@ -19,3 +19,11 @@ describe('monthStats', () => {
     expect(monthStats(setup(), '2026-11', '2026-10-22').elapsedDays).toBe(0)
   })
 })
+
+describe('monthStats 앱 범위', () => {
+  it('범위 안 앱의 타수와 조정만 더한다', () => {
+    const s = monthStats(setup(), '2026-10', '2026-10-22', ['slack'])
+    expect(s).toMatchObject({ total: 505, activeDays: 1 })
+    expect(s.apps.map((a) => a.appId)).toEqual(['slack'])
+  })
+})

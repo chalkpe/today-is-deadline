@@ -1,6 +1,8 @@
 import type { DateKey, MonthKey } from './calendar'
 
 export type AppShare = { appId: string; name: string; count: number; ratio: number } // ratio 0~1
+/** 한 번이라도 집계된 앱(설정 창의 앱 필터 목록) */
+export type KnownApp = { appId: string; name: string }
 export type DayTotal = { date: DateKey; total: number }
 export type DayDetail = { date: DateKey; total: number; adjustment: number; apps: AppShare[] }
 export type TodayStats = { date: DateKey; total: number; weekTotal: number; apps: AppShare[] }
