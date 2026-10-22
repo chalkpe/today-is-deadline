@@ -5,24 +5,19 @@ type Props = { locked: boolean; onToggleLock(): void; onOpenSettings(): void }
 
 const BUTTON = 'flex size-4 items-center justify-center rounded p-0 text-fg-muted hover:bg-control-border/60 hover:text-fg'
 
-/**
- * 패널 오른쪽 위의 잠금·설정 아이콘. 풀려 있으면 패널에 마우스를 올렸을 때만 보인다.
- * 잠겨 있으면 잠긴 것을 바로 알 수 있게 늘 보인다. 이때 배경은 그대로 칠해 아래 월 라벨을 가리고 아이콘만 흐리게 둔다.
- */
+/** 패널 오른쪽 위의 잠금·설정 아이콘. 패널에 마우스를 올렸을 때만 보인다. 잠금 상태는 자물쇠 모양과 색으로 구분한다. */
 export function PanelIcons({ locked, onToggleLock, onOpenSettings }: Props) {
-  const dim = locked && 'opacity-70 transition-opacity group-hover:opacity-100'
   return (
     <div
       className={cn(
-        'absolute top-0.5 right-2 flex gap-0.5 rounded bg-panel transition-opacity',
-        !locked && 'opacity-0 group-hover:opacity-100',
+        'absolute top-0.5 right-2 flex gap-0.5 rounded bg-panel opacity-0 transition-opacity group-hover:opacity-100',
         NO_DRAG_REGION,
       )}
     >
-      <button type="button" className={cn(BUTTON, locked && 'text-fg', dim)} onClick={onToggleLock}>
+      <button type="button" className={cn(BUTTON, locked && 'text-fg')} onClick={onToggleLock}>
         <LockIcon locked={locked} />
       </button>
-      <button type="button" className={cn(BUTTON, dim)} onClick={onOpenSettings}>
+      <button type="button" className={BUTTON} onClick={onOpenSettings}>
         <SettingsIcon />
       </button>
     </div>

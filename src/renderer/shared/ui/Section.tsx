@@ -13,7 +13,7 @@ export function Section({ heading, description, errors, children }: Props) {
   return (
     <section className="flex flex-col gap-2">
       <div className="flex flex-col gap-0.5 px-1">
-        <h2 className="text-xs font-semibold text-fg-muted">{heading}</h2>
+        <h2 className="text-xs font-semibold text-fg">{heading}</h2>
         {description && <p className="text-xs text-fg-muted">{description}</p>}
       </div>
       <div className="flex flex-col divide-y divide-card-border rounded-lg border border-card-border bg-surface px-4 *:py-3">
