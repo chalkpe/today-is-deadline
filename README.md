@@ -8,6 +8,71 @@
 - 시스템 외관을 따르는 라이트·다크 모드. 설정에서 고정할 수 있다.
 - macOS(Apple Silicon·Intel)와 Windows 11(x64)을 지원한다.
 
+## 화면
+
+**위젯.** 칸을 누르면 그날의 앱별 타수가 펼쳐진다.
+
+<table>
+<tr>
+<td valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dark/widget.png">
+  <img src="docs/screenshots/light/widget.png" width="380">
+</picture>
+</td>
+<td valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dark/widget-expanded.png">
+  <img src="docs/screenshots/light/widget-expanded.png" width="380">
+</picture>
+</td>
+</tr>
+</table>
+
+**통계.** 일·주·월.
+
+<table>
+<tr>
+<td valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dark/stats-day.png">
+  <img src="docs/screenshots/light/stats-day.png" width="260">
+</picture>
+</td>
+<td valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dark/stats-week.png">
+  <img src="docs/screenshots/light/stats-week.png" width="260">
+</picture>
+</td>
+<td valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dark/stats-month.png">
+  <img src="docs/screenshots/light/stats-month.png" width="260">
+</picture>
+</td>
+</tr>
+</table>
+
+**설정과 가감.**
+
+<table>
+<tr>
+<td valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dark/settings.png">
+  <img src="docs/screenshots/light/settings.png" width="380">
+</picture>
+</td>
+<td valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dark/adjust.png">
+  <img src="docs/screenshots/light/adjust.png" width="380">
+</picture>
+</td>
+</tr>
+</table>
+
 ## 설치
 
 [Releases](https://github.com/chalkpe/today-is-deadline/releases)에서 내려받는다. 서명하지 않은 빌드다.
