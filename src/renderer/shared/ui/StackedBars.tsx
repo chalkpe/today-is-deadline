@@ -38,7 +38,7 @@ export function StackedBars({ bars, colors, height, onSelect }: Props) {
           <>
             <div className="flex w-full flex-col justify-end" style={{ height }}>
               <div
-                className="mx-auto flex w-full max-w-12 flex-col-reverse overflow-hidden rounded-t-[3px] bg-neutral-500"
+                className="mx-auto flex w-full max-w-12 flex-col-reverse overflow-hidden rounded-t-[3px] bg-fg-muted"
                 style={{ height: bar.px }}
               >
                 {bar.segments.map((segment) => (
@@ -50,7 +50,7 @@ export function StackedBars({ bars, colors, height, onSelect }: Props) {
                 ))}
               </div>
             </div>
-            {bar.label && <span className="text-[11px] leading-none text-neutral-500">{bar.label}</span>}
+            {bar.label && <span className="text-[11px] leading-none text-fg-muted">{bar.label}</span>}
           </>
         )
         const column = 'flex min-w-0 flex-1 flex-col items-center gap-1.5'
@@ -66,7 +66,7 @@ export function StackedBars({ bars, colors, height, onSelect }: Props) {
             type="button"
             key={bar.key}
             disabled={bar.disabled}
-            className={cn(column, 'rounded-md p-0 transition-colors hover:bg-white/5 disabled:pointer-events-none disabled:opacity-40')}
+            className={cn(column, 'rounded-md p-0 transition-colors hover:bg-cell-empty disabled:pointer-events-none disabled:opacity-40')}
             onClick={() => onSelect(bar.key)}
           >
             {content}

@@ -1,4 +1,5 @@
 import { atDate, type Period, PeriodNav, switchTab, type Tab } from '@renderer/features/period-nav'
+import { useTheme } from '@renderer/shared/lib/theme'
 import { EmptyCard } from '@renderer/shared/ui/Card'
 import { Page } from '@renderer/shared/ui/Page'
 import { Tabs } from '@renderer/shared/ui/Tabs'
@@ -6,6 +7,7 @@ import { DayView } from '@renderer/widgets/stats-day'
 import { MonthView } from '@renderer/widgets/stats-month'
 import { WeekView } from '@renderer/widgets/stats-week'
 import { type DateKey, isDateKey } from '@shared/model/calendar'
+import type { Theme } from '@shared/model/theme'
 import { useState } from 'react'
 import { type StatsView, useStatsData, useToday } from '../model/useStatsData'
 
@@ -26,6 +28,7 @@ export function StatsPage({ date }: { date: string | null }) {
     if (isDateKey(date)) setPeriod(atDate('day', date, today))
   }
   const view = useStatsData(period)
+  const theme = useTheme()
   const openDay = (day: DateKey) => setPeriod(atDate('day', day, today))
 
   return (
@@ -34,24 +37,40 @@ export function StatsPage({ date }: { date: string | null }) {
         <Tabs value={period.tab} options={TABS} onChange={(tab) => setPeriod(switchTab(period, tab, today))} />
         <PeriodNav period={period} today={today} onChange={setPeriod} />
       </div>
-      <Content view={view} today={today} onSelectDay={openDay} />
+      <Content view={view} theme={theme} today={today} onSelectDay={openDay} />
     </Page>
   )
 }
 
-type ContentProps = { view: StatsView; today: DateKey; onSelectDay(date: DateKey): void }
+type ContentProps = { view: StatsView; theme: Theme; today: DateKey; onSelectDay(date: DateKey): void }
 
-function Content({ view: { settings, data, failed }, today, onSelectDay }: ContentProps) {
+function Content({ view: { settings, data, failed }, theme, today, onSelectDay }: ContentProps) {
   if (failed) return <EmptyCard>불러오지 못했습니다</EmptyCard>
   if (!settings || !data) return null
   switch (data.tab) {
     case 'day':
-      return <DayView stats={data.stats} colors={data.colors} baseColor={settings.heatmap.baseColor} />
+      return <DayView stats={data.stats} colors={data.colors} baseColor={settings.heatmap.baseColor} theme={theme} />
     case 'week':
       return (
-        <WeekView stats={data.stats} colors={data.colors} baseColor={settings.heatmap.baseColor} today={today} onSelectDay={onSelectDay} />
+        <WeekView
+          stats={data.stats}
+          colors={data.colors}
+          baseColor={settings.heatmap.baseColor}
+          theme={theme}
+          today={today}
+          onSelectDay={onSelectDay}
+        />
       )
     case 'month':
-      return <MonthView stats={data.stats} colors={data.colors} heatmap={settings.heatmap} today={today} onSelectDay={onSelectDay} />
+      return (
+        <MonthView
+          stats={data.stats}
+          colors={data.colors}
+          heatmap={settings.heatmap}
+          theme={theme}
+          today={today}
+          onSelectDay={onSelectDay}
+        />
+      )
   }
 }

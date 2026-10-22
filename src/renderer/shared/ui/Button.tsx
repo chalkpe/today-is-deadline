@@ -2,9 +2,9 @@ import { cn } from 'cn'
 import type { ComponentProps } from 'react'
 
 const VARIANT = {
-  default: 'bg-neutral-700 text-neutral-100 hover:bg-neutral-600',
+  default: 'bg-control-border/60 text-fg hover:bg-control-border',
   primary: 'bg-emerald-600 text-white hover:bg-emerald-500',
-  ghost: 'text-neutral-400 hover:bg-white/10 hover:text-neutral-100',
+  ghost: 'text-fg-muted hover:bg-control-border/60 hover:text-fg',
 } as const
 
 const SIZE = { md: 'h-8 px-3', sm: 'h-6 px-2 text-xs' } as const

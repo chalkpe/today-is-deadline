@@ -13,7 +13,7 @@ export function RadioGroup<T extends string>({ name, value, options, onChange }:
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1.5">
       {options.map((option) => (
-        <label key={option.value} className="flex cursor-pointer items-center gap-1.5 text-neutral-300">
+        <label key={option.value} className="flex cursor-pointer items-center gap-1.5 text-fg">
           <input
             type="radio"
             name={name}

@@ -8,7 +8,7 @@ const MARKS = [0, 6, 12, 18, 24]
  */
 export function HourAxis() {
   return (
-    <div className="flex justify-between text-[10px] leading-none text-neutral-500">
+    <div className="flex justify-between text-[10px] leading-none text-fg-muted">
       {MARKS.map((hour, i) => (
         <span
           key={hour}

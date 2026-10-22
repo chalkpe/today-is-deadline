@@ -1,19 +1,20 @@
-import { WIDGET_BACKGROUND } from '@renderer/shared/lib/color'
 import { NO_DRAG_REGION } from '@renderer/shared/ui/region'
 import { cn } from 'cn'
 
 type Props = { locked: boolean; onToggleLock(): void; onOpenSettings(): void }
 
-const BUTTON = 'flex size-4 items-center justify-center rounded p-0 text-neutral-400 hover:bg-white/10 hover:text-neutral-100'
+const BUTTON = 'flex size-4 items-center justify-center rounded p-0 text-fg-muted hover:bg-control-border/60 hover:text-fg'
 
 /** 패널 오른쪽 위의 잠금·설정 아이콘. 패널에 마우스를 올렸을 때만 보인다. */
 export function PanelIcons({ locked, onToggleLock, onOpenSettings }: Props) {
   return (
     <div
-      className={cn('absolute top-0.5 right-2 flex gap-0.5 rounded opacity-0 transition-opacity group-hover:opacity-100', NO_DRAG_REGION)}
-      style={{ background: WIDGET_BACKGROUND }}
+      className={cn(
+        'absolute top-0.5 right-2 flex gap-0.5 rounded bg-panel opacity-0 transition-opacity group-hover:opacity-100',
+        NO_DRAG_REGION,
+      )}
     >
-      <button type="button" className={cn(BUTTON, locked && 'text-neutral-100')} onClick={onToggleLock}>
+      <button type="button" className={cn(BUTTON, locked && 'text-fg')} onClick={onToggleLock}>
         <LockIcon open={!locked} />
       </button>
       <button type="button" className={BUTTON} onClick={onOpenSettings}>

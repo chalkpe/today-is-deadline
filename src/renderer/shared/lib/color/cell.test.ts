@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { cellColor, EMPTY_CELL, oklabDistance } from './cell'
 
 describe('cellColor', () => {
-  // 어두운 기준색(#1e3a8a)은 다크 배경과 명도 차가 작아 0.04를 넘기 어렵다(비율을 어떻게 잡아도 최대 약 0.0399).
+  // 다크의 어두운 기준색(#1e3a8a)만 0.03으로 본다. 기존 다크 모습을 지키려고 START_RATIO.dark = 0.3을 유지해서
+  // 인접 거리 최솟값이 0.0345다(비율을 0.2 이하로 내리면 0.04를 넘지만 다크 히트맵의 모습이 달라진다).
   const minDistance = (theme: string, base: string) => (theme === 'dark' && base === '#1e3a8a' ? 0.03 : 0.04)
   const bases = ['#39d353', '#3b82f6', '#f97316', '#e11d48', '#1e3a8a']
 
@@ -24,12 +25,15 @@ describe('cellColor', () => {
   }
 
   it('100은 소문자 hex로 정규화한다', () => {
-    expect(cellColor('#39D353', 100)).toBe('#39d353')
+    expect(cellColor('#39D353', 100, 'light')).toBe('#39d353')
+    expect(cellColor('#39D353', 100, 'dark')).toBe('#39d353')
   })
 
-  it('단계 사이 값과 범위 밖 값도 처리한다', () => {
-    expect(cellColor('#39d353', 37)).toMatch(/^#[0-9a-f]{6}$/)
-    expect(cellColor('#39d353', 5)).toBe(cellColor('#39d353', 20))
-    expect(cellColor('#39d353', 150)).toBe('#39d353')
-  })
+  for (const theme of ['light', 'dark'] as const) {
+    it(`${theme}: 단계 사이 값과 범위 밖 값도 처리한다`, () => {
+      expect(cellColor('#39d353', 37, theme)).toMatch(/^#[0-9a-f]{6}$/)
+      expect(cellColor('#39d353', 5, theme)).toBe(cellColor('#39d353', 20, theme))
+      expect(cellColor('#39d353', 150, theme)).toBe('#39d353')
+    })
+  }
 })

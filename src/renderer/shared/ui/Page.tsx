@@ -1,4 +1,3 @@
-import { WIDGET_BACKGROUND } from '@renderer/shared/lib/color'
 import { cn } from 'cn'
 import { type ReactNode, useEffect } from 'react'
 
@@ -11,8 +10,8 @@ export function Page({ windowTitle, wide = false, children }: Props) {
     document.title = windowTitle
   }, [windowTitle])
   return (
-    // color-scheme이 날짜·숫자 입력과 스크롤 막대 같은 기본 컨트롤도 어둡게 그린다
-    <div className="min-h-screen p-6 text-sm text-neutral-200 [color-scheme:dark]" style={{ background: WIDGET_BACKGROUND }}>
+    // 기본 컨트롤(날짜·숫자 입력, 스크롤 막대)의 색은 루트의 color-scheme이 테마에 맞춘다
+    <div className="min-h-screen bg-page p-6 text-sm text-fg">
       <div className={cn('mx-auto flex flex-col gap-6', !wide && 'max-w-xl')}>{children}</div>
     </div>
   )

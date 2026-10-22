@@ -7,6 +7,7 @@ import { type DateKey, formatDateKo } from '@shared/model/calendar'
 import type { IntensityContext } from '@shared/model/intensity'
 import type { Settings } from '@shared/model/settings'
 import { formatCount, type MonthStats } from '@shared/model/stats'
+import type { Theme } from '@shared/model/theme'
 
 type Props = {
   stats: MonthStats
@@ -14,13 +15,14 @@ type Props = {
   colors: Map<string, string>
   /** 달력 강도는 위젯과 같은 설정 모드를 따른다 */
   heatmap: Settings['heatmap']
+  theme: Theme
   today: DateKey
   /** 날짜 칸을 누르면 그 날짜의 일 탭으로 간다 */
   onSelectDay(date: DateKey): void
 }
 
 /** 월 탭: 타일 4개 → 달력 → 앱별 목록 */
-export function MonthView({ stats, colors, heatmap, today, onSelectDay }: Props) {
+export function MonthView({ stats, colors, heatmap, theme, today, onSelectDay }: Props) {
   const { total, activeDays, bestDay } = stats
   // 상대 모드면 이달 안의 최댓값 기준
   const ctx: IntensityContext =
@@ -46,6 +48,7 @@ export function MonthView({ stats, colors, heatmap, today, onSelectDay }: Props)
             days={stats.days}
             ctx={ctx}
             baseColor={heatmap.baseColor}
+            theme={theme}
             today={today}
             onSelect={onSelectDay}
           />

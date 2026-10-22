@@ -1,5 +1,6 @@
 import { cellColor } from '@renderer/shared/lib/color'
 import { WEEKDAYS_KO } from '@shared/model/calendar'
+import type { Theme } from '@shared/model/theme'
 import { Fragment } from 'react'
 import { gridIntensities } from './charts'
 
@@ -9,17 +10,18 @@ type Props = {
   /** 월요일부터 7행 × 0~23시 24열의 타수 */
   grid: number[][]
   baseColor: string
+  theme: Theme
 }
 
 /** 요일 × 시간 히트맵. 강도는 격자 안의 최댓값 기준 상대 모드. 열은 창 너비를 나눠 채운다. */
-export function DowHourGrid({ grid, baseColor }: Props) {
+export function DowHourGrid({ grid, baseColor, theme }: Props) {
   const intensities = gridIntensities(grid)
   const rows = WEEKDAYS_KO.map((label, day) => ({
     label,
     cells: (intensities[day] ?? []).map((intensity, hour) => ({ hour, intensity })),
   }))
   return (
-    <div className="grid grid-cols-[auto_repeat(24,minmax(0,1fr))] gap-0.5 text-[10px] leading-none text-neutral-500">
+    <div className="grid grid-cols-[auto_repeat(24,minmax(0,1fr))] gap-0.5 text-[10px] leading-none text-fg-muted">
       <span />
       {HOUR_MARKS.map((hour) => (
         // 6시간 묶음의 왼쪽 끝 = 그 시각의 칸
@@ -29,7 +31,7 @@ export function DowHourGrid({ grid, baseColor }: Props) {
         <Fragment key={row.label}>
           <span className="flex items-center pr-2">{row.label}</span>
           {row.cells.map((cell) => (
-            <div key={cell.hour} className="h-4 rounded-[2px]" style={{ background: cellColor(baseColor, cell.intensity) }} />
+            <div key={cell.hour} className="h-4 rounded-[2px]" style={{ background: cellColor(baseColor, cell.intensity, theme) }} />
           ))}
         </Fragment>
       ))}

@@ -4,12 +4,12 @@ type Props = { value: string; onChange(value: string): void }
 export function ColorInput({ value, onChange }: Props) {
   return (
     <label className="flex cursor-pointer items-center gap-2">
-      <span className="font-mono text-xs text-neutral-400">{value}</span>
+      <span className="font-mono text-xs text-fg-muted">{value}</span>
       <input
         type="color"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-7 w-10 cursor-pointer rounded-md border border-white/10 bg-transparent p-0.5 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded [&::-webkit-color-swatch]:border-0"
+        className="h-7 w-10 cursor-pointer rounded-md border border-control-border bg-transparent p-0.5 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded [&::-webkit-color-swatch]:border-0"
       />
     </label>
   )

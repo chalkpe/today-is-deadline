@@ -1,11 +1,11 @@
 type Props = { onOpenSettings(): void; onRequest(): void }
 
-const BUTTON = 'w-full rounded bg-neutral-700 px-2 py-1 text-[11px] text-neutral-100 hover:bg-neutral-600'
+const BUTTON = 'w-full rounded bg-control-border/60 px-2 py-1 text-[11px] text-fg hover:bg-control-border'
 
 /** 높이는 PERMISSION_NOTICE_HEIGHT로 고정이다. 최소 너비(140)에서도 넘치지 않게 버튼은 세로로 쌓는다. */
 export function PermissionNotice({ onOpenSettings, onRequest }: Props) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-2 break-keep text-center text-[11px] text-neutral-300 leading-snug">
+    <div className="flex h-full flex-col items-center justify-center gap-2 break-keep text-center text-[11px] text-fg leading-snug">
       <p>
         타자 수를 세려면 입력 모니터링 권한이 필요합니다.
         <br />

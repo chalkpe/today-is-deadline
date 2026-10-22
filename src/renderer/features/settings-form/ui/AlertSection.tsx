@@ -25,7 +25,7 @@ function Seconds({ value, onCommit }: { value: number; onCommit(text: string): v
   return (
     <span className="flex items-center gap-1.5">
       <NumberInput value={value} min={ALERT_SECONDS_MIN} max={ALERT_SECONDS_MAX} step={10} onCommit={onCommit} />
-      <span className="text-neutral-400">초</span>
+      <span className="text-fg-muted">초</span>
     </span>
   )
 }
@@ -55,7 +55,7 @@ export function AlertSection({ alert, errors, onChange, onPreview }: Props) {
         />
         <div className="flex items-center gap-2">
           <Button onClick={pickFile}>파일 선택…</Button>
-          {sound.kind === 'file' && <span className="min-w-0 flex-1 truncate text-neutral-300">{fileNameOf(sound.path)}</span>}
+          {sound.kind === 'file' && <span className="min-w-0 flex-1 truncate text-fg">{fileNameOf(sound.path)}</span>}
           <Button className="ml-auto" onClick={() => onPreview(sound)}>
             미리 듣기
           </Button>

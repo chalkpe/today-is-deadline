@@ -24,5 +24,5 @@ export function AppIcon({ appId, className }: { appId: string; className?: strin
     }
   }, [appId])
   if (src) return <img src={src} className={cn('size-3 shrink-0', className)} />
-  return <div className={cn('size-3 shrink-0 rounded-[2px] bg-neutral-600', className)} />
+  return <div className={cn('size-3 shrink-0 rounded-[2px] bg-cell-empty', className)} />
 }

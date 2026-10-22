@@ -7,7 +7,7 @@ export function Footer({ today, onClick }: Props) {
   return (
     <button
       type="button"
-      className="flex w-full min-w-0 items-end p-0 text-left text-[11px] text-neutral-300"
+      className="flex w-full min-w-0 items-end p-0 text-left text-[11px] text-fg"
       style={{ height: FOOTER_HEIGHT }}
       onClick={onClick}
     >

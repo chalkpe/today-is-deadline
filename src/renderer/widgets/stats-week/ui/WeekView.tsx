@@ -7,6 +7,7 @@ import { StackedBars } from '@renderer/shared/ui/StackedBars'
 import { Compare, Tile } from '@renderer/shared/ui/Tile'
 import { type DateKey, formatDateKo, WEEKDAYS_KO, weekdayIndex } from '@shared/model/calendar'
 import { formatCount, type WeekStats } from '@shared/model/stats'
+import type { Theme } from '@shared/model/theme'
 
 const BARS_HEIGHT = 160
 
@@ -15,13 +16,14 @@ type Props = {
   /** 상위 앱 색(창이 열려 있는 동안 같은 앱은 같은 색) */
   colors: Map<string, string>
   baseColor: string
+  theme: Theme
   today: DateKey
   /** 날짜 막대를 누르면 그 날짜의 일 탭으로 간다 */
   onSelectDay(date: DateKey): void
 }
 
 /** 주 탭: 타일 4개 → 날짜별 누적 막대 + 요일×시간 히트맵 → 앱별 목록 */
-export function WeekView({ stats, colors, baseColor, today, onSelectDay }: Props) {
+export function WeekView({ stats, colors, baseColor, theme, today, onSelectDay }: Props) {
   const { total, activeDays, bestDay } = stats
   const top = coloredApps(stats.topApps, colors)
   const bars = stats.daily.map((day) => ({
@@ -51,7 +53,7 @@ export function WeekView({ stats, colors, baseColor, today, onSelectDay }: Props
             <StackedBars bars={bars} colors={colors} height={BARS_HEIGHT} onSelect={onSelectDay} />
           </Card>
           <Card heading="요일 × 시간">
-            <DowHourGrid grid={stats.dowHour} baseColor={baseColor} />
+            <DowHourGrid grid={stats.dowHour} baseColor={baseColor} theme={theme} />
           </Card>
         </>
       )}

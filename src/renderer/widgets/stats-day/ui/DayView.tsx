@@ -7,6 +7,7 @@ import { StackedBars } from '@renderer/shared/ui/StackedBars'
 import { Strip } from '@renderer/shared/ui/Strip'
 import { Compare, Tile } from '@renderer/shared/ui/Tile'
 import { type DayStats, formatCount, formatDuration, formatMinute } from '@shared/model/stats'
+import type { Theme } from '@shared/model/theme'
 
 const BARS_HEIGHT = 160
 
@@ -15,10 +16,11 @@ type Props = {
   /** 상위 앱 색(창이 열려 있는 동안 같은 앱은 같은 색) */
   colors: Map<string, string>
   baseColor: string
+  theme: Theme
 }
 
 /** 일 탭: 타일 4개 → 시간별 누적 막대 + 10분 띠 → 앱별 목록 */
-export function DayView({ stats, colors, baseColor }: Props) {
+export function DayView({ stats, colors, baseColor, theme }: Props) {
   const { total, adjustment, peakHour, longestGap } = stats
   const top = coloredApps(stats.topApps, colors)
   const bars = stats.hourly.map((bucket) => ({
@@ -56,7 +58,7 @@ export function DayView({ stats, colors, baseColor }: Props) {
             <HourAxis />
           </Card>
           <Card heading="10분 단위">
-            <Strip values={stats.strip} baseColor={baseColor} />
+            <Strip values={stats.strip} baseColor={baseColor} theme={theme} />
             <HourAxis />
           </Card>
         </>

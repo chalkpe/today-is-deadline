@@ -66,7 +66,7 @@ export function ResizeHandle({ maxWidth }: Props) {
 
   return (
     <div
-      className={cn('absolute inset-y-0 right-0 w-1.5 cursor-ew-resize hover:bg-white/10', NO_DRAG_REGION)}
+      className={cn('absolute inset-y-0 right-0 w-1.5 cursor-ew-resize hover:bg-control-border/60', NO_DRAG_REGION)}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}

@@ -17,10 +17,10 @@ export function Field({ label, hint, error, inline = false, className, children 
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
       <div className={cn('flex gap-1.5', inline ? 'flex-wrap items-center justify-between gap-x-4' : 'flex-col')}>
-        <span className="text-neutral-300">{label}</span>
+        <span className="text-fg">{label}</span>
         {children}
       </div>
-      {hint && <p className="text-xs text-neutral-500">{hint}</p>}
+      {hint && <p className="text-xs text-fg-muted">{hint}</p>}
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   )

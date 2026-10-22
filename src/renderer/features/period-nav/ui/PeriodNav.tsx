@@ -14,7 +14,7 @@ export function PeriodNav({ period, today, onChange }: Props) {
       <Button variant="ghost" onClick={() => onChange(shift(period, -1, today))}>
         ◀
       </Button>
-      <span className="min-w-0 flex-1 truncate text-center text-base font-semibold text-neutral-100">{title(period)}</span>
+      <span className="min-w-0 flex-1 truncate text-center text-base font-semibold text-fg">{title(period)}</span>
       <Button variant="ghost" disabled={!forward} onClick={() => onChange(shift(period, 1, today))}>
         ▶
       </Button>
