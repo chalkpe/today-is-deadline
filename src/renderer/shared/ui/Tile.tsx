@@ -26,7 +26,12 @@ type CompareProps = { label: string; current: number; previous: number }
 /** "어제보다 +12%". 증가는 초록, 감소는 빨강, 이전 기간이 0이면 "–" */
 export function Compare({ label, current, previous }: CompareProps) {
   const ratio = changeRatio(current, previous)
-  const tone = ratio === null || ratio === 0 ? 'text-fg-muted' : ratio > 0 ? 'text-emerald-400' : 'text-rose-400'
+  const tone =
+    ratio === null || ratio === 0
+      ? 'text-fg-muted'
+      : ratio > 0
+        ? 'text-emerald-600 dark:text-emerald-400'
+        : 'text-rose-600 dark:text-rose-400'
   return (
     <span>
       {`${label} `}

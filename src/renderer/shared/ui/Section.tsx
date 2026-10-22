@@ -20,7 +20,7 @@ export function Section({ heading, description, errors, children }: Props) {
         {children}
       </div>
       {errors?.map((error) => (
-        <p key={error} className="px-1 text-xs text-red-400">
+        <p key={error} className="px-1 text-xs text-red-600 dark:text-red-400">
           {error}
         </p>
       ))}

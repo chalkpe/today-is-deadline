@@ -12,7 +12,12 @@ export function AdjustList({ items, onRemove }: Props) {
   return items.map((item) => (
     <div key={item.id} className="flex items-center gap-3">
       <span className="w-28 shrink-0 text-fg">{formatDateKo(item.date)}</span>
-      <span className={cn('min-w-16 shrink-0 text-right tabular-nums', item.delta > 0 ? 'text-emerald-400' : 'text-rose-400')}>
+      <span
+        className={cn(
+          'min-w-16 shrink-0 text-right tabular-nums',
+          item.delta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
+        )}
+      >
         {formatDelta(item.delta)}
       </span>
       <span className="min-w-0 flex-1 truncate text-fg-muted">{item.memo}</span>

@@ -4,9 +4,13 @@ import { DETAIL_HEADER_HEIGHT, DETAIL_ROW_HEIGHT } from '@shared/model/layout'
 import { type DayDetail as DayDetailData, foldApps, formatCount, formatPercent } from '@shared/model/stats'
 
 // 앱 아이콘은 늘 보인다. 설정의 showIcons는 잠금·설정 아이콘만 끈다(스펙 8.2·8.3).
-type Props = { detail: DayDetailData }
+type Props = {
+  detail: DayDetailData
+  /** 앱별 막대 채움색. 테마와 무관하게 설정의 기준색을 쓴다 */
+  baseColor: string
+}
 
-export function DayDetail({ detail }: Props) {
+export function DayDetail({ detail, baseColor }: Props) {
   const { shown, others } = foldApps(detail.apps, 5)
   return (
     <div className="text-[11px] text-fg">
@@ -28,7 +32,7 @@ export function DayDetail({ detail }: Props) {
           {/* 좁은 창에서는 막대 다음으로 이름이 줄어 숫자가 패널 밖으로 밀리지 않는다 */}
           <span className="w-20 min-w-0 truncate">{app.name}</span>
           <div className="h-1.5 min-w-0 flex-1 rounded-full bg-cell-empty">
-            <div className="h-full rounded-full bg-fg" style={{ width: `${app.ratio * 100}%` }} />
+            <div className="h-full rounded-full" style={{ width: `${app.ratio * 100}%`, background: baseColor }} />
           </div>
           <span className="shrink-0 text-fg-muted">{`${formatCount(app.count)} · ${formatPercent(app.ratio)}`}</span>
         </div>

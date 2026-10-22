@@ -65,7 +65,7 @@ export function AdjustForm() {
         />
       </Field>
       <div className="col-span-2 flex items-center justify-end gap-3">
-        {error?.field === 'form' && <p className="text-xs text-red-400">{error.message}</p>}
+        {error?.field === 'form' && <p className="text-xs text-red-600 dark:text-red-400">{error.message}</p>}
         <Button type="submit" variant="primary" disabled={saving}>
           저장
         </Button>
