@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { adjustmentHandlers } from '@main/features/adjustments'
 import { countingHandlers, createCounting } from '@main/features/counting'
 import { startIdleAlert } from '@main/features/idle-alert'
-import { createSettingsStore, publishSettings, settingsHandlers } from '@main/features/settings'
+import { applyInitialAppearance, createSettingsStore, publishSettings, settingsHandlers } from '@main/features/settings'
 import { registerSoundScheme, serveSounds, soundHandlers, soundUrlFor } from '@main/features/sound'
 import { createTodayPusher, statsHandlers } from '@main/features/stats'
 import { createTray } from '@main/features/tray'
@@ -33,6 +33,7 @@ function start(): void {
 
   // 스펙 12절 순서: 설정 → DB → 트레이 → 위젯 창 → 권한 확인 → 훅 시작 → 알림 enable
   const settings = createSettingsStore({ filePath: join(dataDir, 'settings.json'), fileExists: existsSync })
+  applyInitialAppearance(settings)
   const db = openDb(join(dataDir, 'data.sqlite'))
   const counting = createCounting({ hook: loadNativeHook(nativeDir), db, settings, log, send: broadcast })
   app.dock?.hide()

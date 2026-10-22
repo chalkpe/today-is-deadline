@@ -1,3 +1,3 @@
 export { settingsHandlers } from './ipc'
-export { publishSettings } from './publish'
+export { applyInitialAppearance, publishSettings } from './publish'
 export { createSettingsStore, type SettingsStore } from './store'
