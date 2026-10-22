@@ -1,4 +1,5 @@
 import type { FixedThresholds } from './intensity'
+import { APPEARANCES, type Appearance } from './theme'
 
 export type HeatmapMode = 'relative' | 'fixed'
 export type BuiltinSoundName = 'rooster' | 'dog-barking' | 'fire-alarm'
@@ -19,7 +20,7 @@ export type Settings = {
   alert: { enabled: boolean; idleSeconds: number; repeatSeconds: number; sound: SoundSetting }
   widget: { x: number | null; y: number | null; width: number; locked: boolean; visible: boolean; displayId: number | null }
   stats: { width: number; height: number }
-  general: { openAtLogin: boolean }
+  general: { openAtLogin: boolean; appearance: Appearance }
 }
 
 // MIN_WEEKS(8)×PITCH(12) + PANEL_PADDING×2 + DOW_LABEL_WIDTH = 132 이상
@@ -39,7 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   alert: { enabled: true, idleSeconds: 300, repeatSeconds: 60, sound: { kind: 'builtin', name: 'rooster' } },
   widget: { x: null, y: null, width: 320, locked: false, visible: true, displayId: null },
   stats: { width: 760, height: 640 },
-  general: { openAtLogin: false },
+  general: { openAtLogin: false, appearance: 'system' },
 }
 
 /** 대기 시간(T1)·반복 간격(T2)의 범위(초). 하루를 넘는 값은 받지 않는다. */
@@ -89,6 +90,7 @@ export function coerceSettings(input: unknown): Settings {
   const alert = section(root.alert)
   const widget = section(root.widget)
   const stats = section(root.stats)
+  const general = section(root.general)
   return {
     counting: { enabled: bool(section(root.counting).enabled, d.counting.enabled) },
     heatmap: {
@@ -117,7 +119,10 @@ export function coerceSettings(input: unknown): Settings {
       displayId: nullableNum(widget.displayId, d.widget.displayId),
     },
     stats: { width: num(stats.width, d.stats.width), height: num(stats.height, d.stats.height) },
-    general: { openAtLogin: bool(section(root.general).openAtLogin, d.general.openAtLogin) },
+    general: {
+      openAtLogin: bool(general.openAtLogin, d.general.openAtLogin),
+      appearance: APPEARANCES.includes(general.appearance as Appearance) ? (general.appearance as Appearance) : d.general.appearance,
+    },
   }
 }
 

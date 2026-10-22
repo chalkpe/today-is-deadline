@@ -111,7 +111,7 @@ describe('createSettingsStore', () => {
     store.onChange(() => {
       throw new Error('boom')
     })
-    expect(() => store.update((c) => ({ ...c, general: { openAtLogin: true } }))).not.toThrow()
+    expect(() => store.update((c) => ({ ...c, general: { ...c.general, openAtLogin: true } }))).not.toThrow()
     expect(store.get().general.openAtLogin).toBe(true)
   })
 

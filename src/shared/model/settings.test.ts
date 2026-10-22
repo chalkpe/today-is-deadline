@@ -121,3 +121,16 @@ describe('validateSettings', () => {
     expect(validateSettings(withAlert({ repeatSeconds: Number.NaN }))).toEqual([SETTINGS_ERRORS.repeat])
   })
 })
+
+describe('general.appearance', () => {
+  it('없거나 잘못되면 system', () => {
+    expect(normalizeSettings({}).general.appearance).toBe('system')
+    expect(normalizeSettings({ general: { appearance: 'nope' } }).general.appearance).toBe('system')
+    expect(coerceSettings({ general: { appearance: 1 } }).general.appearance).toBe('system')
+  })
+  it('light·dark는 보존하고 openAtLogin도 유지한다', () => {
+    expect(normalizeSettings({ general: { appearance: 'light' } }).general.appearance).toBe('light')
+    expect(normalizeSettings({ general: { appearance: 'dark' } }).general.appearance).toBe('dark')
+    expect(normalizeSettings({ general: { openAtLogin: true } }).general).toEqual({ openAtLogin: true, appearance: 'system' })
+  })
+})
