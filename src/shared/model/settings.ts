@@ -47,7 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
     showDayLabels: false,
     showIcons: true,
   },
-  alert: { enabled: true, idleSeconds: 300, repeatSeconds: 60, sound: { kind: 'builtin', name: 'rooster' } },
+  alert: { enabled: false, idleSeconds: 300, repeatSeconds: 60, sound: { kind: 'builtin', name: 'rooster' } },
   widget: { x: null, y: null, width: 320, locked: false, visible: true, displayId: null, alwaysOnTop: true },
   filter: { enabled: false, included: [] },
   stats: { width: 760, height: 640 },

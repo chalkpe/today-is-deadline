@@ -14,7 +14,7 @@ describe('trayIconFile', () => {
 describe('trayState', () => {
   it('체크 항목은 설정 값을 그대로 보여 준다', () => {
     const s = { ...DEFAULT_SETTINGS, widget: { ...DEFAULT_SETTINGS.widget, locked: true } }
-    expect(trayState(s)).toEqual({ counting: true, alert: true, widgetVisible: true, locked: true })
+    expect(trayState(s)).toEqual({ counting: true, alert: false, widgetVisible: true, locked: true })
   })
 })
 
